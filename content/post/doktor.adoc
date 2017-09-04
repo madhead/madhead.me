@@ -1,0 +1,196 @@
+---
+title: Kotlin + Gradle = Jenkins plugin
+date: 2017-09-04T21:00:00+03:00
+tags:
+  - kotlin
+  - gradle
+  - jenkins
+  - confluence
+  - programming
+  - pet projects
+---
+
+Запилил тут плагин для Jenkins на Kotlin.
+Делюсь впечатлениями.
+
+<!--more-->
+
+## Зачем?
+
+Очень уж злит меня, как у нас на работе дела с документацией обстоят.
+Порой кажется, что лучше бы её вовсе не было, чем была такая, какая есть.
+
+А всё потому что мы используем SharePoint.
+Раньше использовали Google Apps, было чуть проще, но сейчас поддержание документации в актуальном виде превращается в действительно нетривиальный трюк, похожий на жонглирование булавами.
+Типа: "разблокируй документ, открытый на редактирование уволившимся сотрудником".
+Ага, совместное редактирование в SharePoint похоже на SVN, где вы можете "залочить" файл.
+В общем, может O365 и крутая штука для манагерья, но, ИМХО, нормальные люди не должны с этим сталкиваться.
+
+Мы, кстати, просто склонировали тот документ в новый.
+
+## Doktor
+
+К счастью, у нас есть ещё и старенький Confluence, за который пока ещё уплочено.
+
+А ещё, я люблю https://daringfireball.net/projects/markdown/syntax[Markdown] и http://asciidoctor.org[Asciidoc(tor)], а не эту пародию на UX, которую предлагают все эти коллаборативные тулзы.
+Мне нравится, как работают https://help.github.com/articles/adding-and-editing-wiki-pages-locally/[wiki-страницы] и https://pages.github.com/[pages] на GitHub.
+
+Погуглил, не нашёл https://wiki.jenkins.io/display/JENKINS/Confluence+Publisher+Plugin[ничего достойного], решил написать свой велосипед, который будет заливать Markdown и Asciidoc в Confluence.
+
+Всё оказалось довольно просто.
+
+### Gradle Kotlin DSL
+
+Решил полностью перейти на https://github.com/gradle/kotlin-dsl[Kotlin DSL] в своих проектах.
+Вердикт: уже юзабельно.
+В новых версиях "причесали" API, нашли способы сделать его более похожим на привычный Groovy, но сохранить типобезопасность.
+https://github.com/gradle/kotlin-dsl/releases/tag/v0.10.1[Например], аксессоры для конфигураций и экстеншенов.
+Больше не нужно писать `"compile"("g:a:1.0")`.
+Работает медленно, но, зато, с хорошим автодополнением и проверкой валидности.
+
+Иногда, правда, отваливается поддержка со стороны IDEA, фиксы прилетают в течение недели, а с https://www.jetbrains.com/toolbox[тулбоксом] и откатится не проблема.
+Ну и DSL в некоторых местах уродлив (спасибо динамической природе Groovy).
+
+Было на Groovy:
+
+[source,groovy]
+----
+developers {
+	developer {
+		id 'madhead'
+		name 'Siarhei Krukau'
+		email 'siarhei.krukau@gmail.com'
+	}
+}
+----
+
+Стало на Kotlin:
+
+[source,kotlin]
+----
+developers = this.Developers().apply {
+	developer(delegateClosureOf<JpiDeveloper> {
+		setProperty("id", "madhead")
+		setProperty("name", "Siarhei Krukau")
+		setProperty("email", "siarhei.krukau@gmail.com")
+	})
+}
+----
+
+### Gradle JPI Plugin
+
+Для сборки Jenkins плагинов в Gradle есть https://github.com/jenkinsci/gradle-jpi-plugin[специальный плагин].
+Он, конечно же, заточен под Java и ничего не знает про Kotlin, так что обрабатываем надфилем.
+
+.Обязательно запускаем `localizer` перед компиляцией Kotlin:
+[source,kotlin]
+----
+tasks.withType(KotlinCompile::class.java).all {
+	dependsOn("localizer")
+}
+----
+
+.Настройка Kotlin Annotation Processing:
+[source,kotlin]
+----
+dependencies {
+	...
+
+	// SezPoz используется для процессинга @hudson.Extension и прочих аннотаций
+	kapt("net.java.sezpoz:sezpoz:${sezpozVersion}")
+}
+
+// Предотвращаем кэширование KAPT
+tasks.withType(KaptTask::class.java).all {
+	outputs.upToDateWhen { false }
+}
+
+tasks.withType(KaptGenerateStubsTask::class.java).all {
+	outputs.upToDateWhen { false }
+}
+----
+
+Это всё!
+После этой небольшой настройки Gradle стал собирать вполне валидный JPI-файл со всеми зависимостями и манифестами.
+
+Можно даже запустить Jenkins с плагином для тестирования: `./gradlew clean jpi server`.
+
+### Jenkins API
+
+Тут, к сожалению, не всё так радужно.
+Хорошей документации по Jenkins API я не нашёл, есть https://jenkins.io/doc/developer[вот такая].
+Но ведь всегда можно изучить сорцы других плагинов!
+Подсматривал https://github.com/KostyaSha/yet-another-docker-plugin[тут] и https://github.com/jenkinsci/workflow-cps-global-lib-plugin[тут].
+А ещё, некоторые плагины, например https://wiki.jenkins.io/display/JENKINS/Credentials+Plugin[Credentials Plugin], который я использовал, у себя на вики приводят список собственных пользователей.
+Можно пробежаться по нему и найти нужные примеры кода.
+Ну и конечно же всегда можно спросить у топчиков https://gitter.im/jenkinsci-ru/public[в Gitter].
+
+Что я понял о Jenkins API:
+
+. Всё, что отрисовывается на UI должно быть http://javadoc.jenkins-ci.org/hudson/model/Describable.html[Describable], иметь http://javadoc.jenkins-ci.org/hudson/model/Descriptor.html[Descriptor].
+. Повторяющиеся элементы конфигурации (как, например, инсталляторы JDK) должны быть `Describable`, поэтому нельзя просто так сделать список примитивов или строк, нужно писать обёртки.
+Ужасно!
+. Всё, что будет использоваться в pipeline, должно быть `Serializable`.
+. Асинхронные Pipeline-степы https://gitter.im/jenkinsci-ru/public?at=59ab23239acddb2407f77b4f[не нужны].
+. https://gitter.im/jenkinsci-ru/public?at=59ab23d2210ac26920eb93cb[Как и] http://javadoc.jenkins.io/hudson/FilePath.html#actAsync-hudson.FilePath.FileCallable-[асинхронные операции над воркспейсом].
+
+### Rx Java 2
+
+Я с самого начала использовал асинхронный API для работы с воркспейсом (на самом деле, не пожалел), и задумался о том, во что его обернуть.
+https://kotlinlang.org/docs/reference/coroutines.html[Корутин] я пока побаиваюсь, решил попробовать https://github.com/ReactiveX/RxJava[Rx Java] / https://github.com/ReactiveX/RxKotlin[Kotlin].
+Тем более, тут и вторая версия недавно подоспела.
+
+Что ж.
+Я бы не сказал, что API идеален: десятки factory-методов, сотни перегруженных операторов у каждого типа.
+Типов много легко в них запутаться.
+А SAM-конверсии и вовсе сыграли со мной https://stackoverflow.com/a/45872598/750510[злую шутку]!
+
+.Найди два отличия:
+[source,kotlin]
+----
+.flatMap {
+	Observable.fromFuture(it).onExceptionResumeNext { Observable.empty<Int>() }
+}
+
+.flatMap {
+	Observable.fromFuture(it).onExceptionResumeNext ( Observable.empty<Int>() )
+}
+----
+
+Оба вызова компилируются, имеют одинаковые типы (IDEA не заподозрит подвоха), только первый зависнет, а второй "проглотит" ошибки, как и ожидается.
+
+Но Rx Java, это именно тот +++<del>киберпанк</del>+++ API, который мы заслужили и придётся использовать именно его.
+
+Долго пытался прикрутить Apache HTTP Components в поток данных, но потом вспомнил про замечательный https://github.com/kittinunf/Fuel[Fuel].
+Оказалось, у Fuel даже есть поддержка Rx типов из коробки.
+Отличная либа, но не без изъяна: например, респонзы можно преобразовывать в типы с помощью интерфейса `ResponseDeserializable`, но в реквесты можно передавать только строки и потоки (нету аналога типа, `RequestSerializable`).
+
+### AsciidoctorJ / flexmark-java
+
+Рендерить http://asciidoc.org[AsciiDoc] на JVM можно только одним способом - https://github.com/asciidoctor/asciidoctorj[AsciidoctorJ].
+Оригинальный http://asciidoctor.org[Asciidoctor] мне нравится.
+Я юзал его через https://ruby.github.io/rake[Rake], https://github.com/progit/progit2/blob/master/Rakefile[подсмотрел] этот способ у авторов Pro Git 2, когда мутили с ребятами перевод на русский.
+О, далёкий 2014-й!
+
+AsciidoctorJ унаследовал от своего идейного вдохновителя простоту API, но из-за использования JRuby получил некоторые https://github.com/asciidoctor/asciidoctorj#using-asciidoctorj-in-an-osgi-environment[проблемы в окружениях с хитрым класслоадингом].
+Я подозреваю, что внутри Jenkins не OSGi, но рецепт подошёл.
+
+С Markdown всё проще.
+Есть достойная библиотека https://github.com/vsch/flexmark-java[flexmark-java], она поддерживает всякие расширения, типа front matter (как раз было очень нужно), GFM-таблиц и прочего.
+API ещё проще, чем у AsciidoctorJ.
+Работает с любым класслоадингом без лишних телодвижений.
+
+Вердикт: обе либы хороши, но flexmark вообще няшка.
+
+## Итоги
+
+За три недели по вечерам я написал вполне рабочую https://github.com/madhead/doktor[штуковину].
+Я потратил около ста часов и пятнадцати баксов.
+Деньги ушли на оплату c3.large EC2 инстанса, ибо Confluence оказался довольно прожорливым и тормозил мой бедный ноут, когда я запускал его локально в Docker'е.
+Я успел до истечения срока действия триальной лицензии, но, думаю, Atlassian продлит её, если я хорошо попрошу.
+Меня друг обнадёжил, потративший год своей жизни на работу на Atlassian.
+
+Сейчас я жду аппрува на включение моего плагина в официальные репы Jenkins, тогда он станет доступным в центре обновлений.
+А ещё, тогда у меня на GH появится беджик https://github.com/jenkinsci[jenkinsci] (по чесноку, ради этого и старался).
+
+А пока что его можно собрать через `./gradlew clean jpi` и попробовать / https://github.com/madhead/doktor/issues/new[потестировать] у себя, если, конечно, есть желание или необходимость.
