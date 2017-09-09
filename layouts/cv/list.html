@@ -31,7 +31,7 @@
               Currently, my level is senior to lead, although I don't like titles.
               I have a strong technical background but I don't skimp on a soft skills as well.
               I am eager to be challenged in order to grow and improve myself.
-              Imperfection (of everything) motivates me.
+              Imperfection (of everything) is my motivation.
             </p>
             <p>
               My strengths:
@@ -137,6 +137,22 @@
                   </li>
                 {{ end }}
               </ul>
+            </article>
+          {{ end }}
+        </div>
+        <div class="clear"></div>
+      </section>
+      <section>
+        <header>
+          <h1>Projects</h1>
+        </header>
+        <div class="sectionContent">
+          {{ range $.Site.Data.madhead.projects }}
+            <article>
+              <h2>{{ if .url }}<a href="{{ .url }}">{{ .name }}</a>{{ else }}{{ .name }}{{ end }}</h2>
+              <p>
+                {{ .description }}
+              </p>
             </article>
           {{ end }}
         </div>

@@ -232,6 +232,22 @@ skills:
         I also have some experience with <a href="https://eclipse.org/jgit/">JGit</a>.
     - name: Liquibase
       level: I know how to use this (and similar) tools, though we don't use it on my current work.
+projects:
+  - name: Doktor
+    url: https://github.com/jenkinsci/doktor-plugin
+    description: >
+      Doktor is a Jenkins plugin for automated documentation uploading to Confluence.
+      Doktor supports Markdown and AsciiDoc documentation and can be used in "classic" builds as well as in Pipelines.
+      Doktor is implemented 100% in Kotlin and Gradle (with Kotlin DSL).
+  - name: Docker Oracle XE
+    url: https://github.com/madhead/docker-oracle-xe
+    description: >
+      CentOS 7 Docker image with Oracle XE 11.2.0 onboard.
+  - name: Saberlight
+    url: https://github.com/madhead/saberlight
+    description: >
+      Saberlight is a console app to control smart BLE bulbs produced by Chinese company Zengge.
+      Saberlight is written in Golang.
 hobbies:
   - Snowboards
   - Longboards
