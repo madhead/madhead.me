@@ -185,7 +185,7 @@ skills:
       level: I've configured several front-end builds with NPM and Webpack using Google.
   ci:
     - name: Jenkins
-      level: I'm pretty proficient with Jenkins Pipelines. I'm using them on my current work widely. I also have some experience of Jenkins administration.
+      level: I'm pretty proficient with Jenkins Pipelines. I'm using them on my current work widely. I also have some experience in Jenkins administration and <a href="https://github.com/jenkinsci/doktor-plugin">writing plugins</a>.
     - name: Travis
       level: I'm using Travis for my Github projects widely. Even this blog and CV is deployed using it.
   front_end:
