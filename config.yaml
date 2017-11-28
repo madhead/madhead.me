@@ -11,7 +11,7 @@ params:
   hashover: false
   widgets:
     recent_articles: true
-    categories: true
+    categories: false
     tags: true
     tags_counter: true
   social:
