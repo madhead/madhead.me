@@ -156,7 +156,9 @@ skills:
     - name: Apache Camel
       level: We're using Camel widely on my current work.
     - name: TestNG
-      level: I prefer TestNG over JUnit.
+      level: I prefer TestNG over JUnit 4.
+    - name: JUnit 5
+      level: I prefer JUnit 5 over TestNG.
   databases:
     - name: Oracle
       level: Using it since 2011 in production systems.
