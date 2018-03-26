@@ -99,6 +99,11 @@
   list-style-position: inside;
 }
 
+.talk-links {
+  float: right;
+  display: inline-block;
+}
+
 @media all and (min-width: 701px) and (max-width: 800px) {
 	.columns {
     -moz-column-count:2;
@@ -149,5 +154,9 @@
 
   #general, #details section {
     border-color: #E2E2E2;
+  }
+
+  .talk-links {
+    display: none;
   }
 }

@@ -160,6 +160,29 @@
       </section>
       <section>
         <header>
+          <h1>Talks</h1>
+        </header>
+        <div class="sectionContent">
+          {{ range $.Site.Data.madhead.talks }}
+            <article>
+              <h2>
+                {{ .name }}{{ if .event }} @ {{ if .links.event}}<a href="{{ .links.event }}">{{ .event }}</a>{{ else }}{{ .event }}{{ end }} {{ end }}
+                <span class="talk-links">
+                  {{ if .links.video }}
+                  <a href="{{ .links.video }}" class="talk-link"><i class="fa fa-video-camera"></i></a>
+                  {{ end }}
+                  {{ if .links.slides }}
+                  <a href="{{ .links.slides }}" class="talk-link"><i class="fa fa-slideshare"></i></a>
+                  {{ end }}
+                </span>
+              </h2>
+            </article>
+          {{ end }}
+        </div>
+        <div class="clear"></div>
+      </section>
+      <section>
+        <header>
           <h1>Hobbies</h1>
         </header>
         <div class="sectionContent">

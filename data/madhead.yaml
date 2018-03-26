@@ -178,7 +178,7 @@ skills:
     - name: Gradle
       level: >
         I am a big fan of Gradle and I'm trying to use it anywhere it can be used since 2013.
-        Check out my <a href="https://drive.google.com/open?id=1X1IrclEwFcPI2B1Fmon3yJtpZnyINpqs0mn5zJ_DOYU">Gradle minique</a>!
+        Check out my Gradle talks below!
     - name: Ant
       level: I've used Ant several times few years ago.
     - name: Maven
@@ -250,6 +250,35 @@ projects:
     description: >
       Saberlight is a console app to control smart BLE bulbs produced by Chinese company Zengge.
       Saberlight is written in Golang.
+talks:
+  - name: 'Kotlin & Spring 5'
+    event: 'BKUG #3'
+    links:
+      event: https://bkug.by/2017/03/25/otchet-o-bkug-3
+      video: https://www.youtube.com/watch?v=tBnRIZkVg-Q
+      slides: https://www.slideshare.net/SiarheiKrukau/spring-5-kotlin
+  - name: 'Java 9: The Platform'
+    event: 'Java Professionals #16'
+    links:
+      event: https://jprof.by/post/otchet-meetup-16
+      video: https://www.youtube.com/watch?v=t2C3QXDLx6o&index=1&list=PLDQPS8WphzVwtmMrvQWddkmPEaXhuSzGG
+      slides: https://www.slideshare.net/SiarheiKrukau/java-9-platform-81010788
+  - name: 'Kotlin Gradle DSL'
+    event: 'BKUG #7'
+    links:
+      event: https://bkug.by/2017/12/20/otchet-o-bkug-7
+      video: https://www.youtube.com/watch?v=TobSxJVOyzU
+      slides:
+  - name: 'K/N S/P'
+    event: 'BKUG #8'
+    links:
+      event: https://bkug.by/2018/02/23/otchet-o-bkug-8
+      video: https://www.youtube.com/watch?v=bfEJZwSmy1g
+      slides: https://docs.google.com/presentation/d/1LeXb75yXdgZwFBT0WlXde3-J4eMmLwKMhesaqo9xEFc/edit?usp=sharing
+  - name: 'Kotlin Gradle DSL'
+    event: 'K⋅Night Kyiv 2018'
+    links:
+      event: https://2event.com/events/1235410
 hobbies:
   - Snowboards
   - Longboards
