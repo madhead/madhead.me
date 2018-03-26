@@ -14,23 +14,45 @@ contacts:
     - language: English
       level: <a href="https://en.wikipedia.org/wiki/Common_European_Framework_of_Reference_for_Languages">CEFR</a> B2
 experience:
-  - start: 2015-02-01
+  - start: 2018-01-01
     company:
       name: EPAM Systems, Inc.
       site: https://epam.com
-    title: Senior Software Developer
+    title: Lead Software Developer
     domain: Travel & Hospitality
     description: '"That guy"'
     responsibilities:
-      - Supporting everything
+      - Supporting multiple projects & streams
     technologies:
       - Spring 3.x
       - JAX-WS / Apache CXF
       - Pivotal Gemfire
       - RedHat JBoss Fuse
-      - Chef
+      - Docker
+  - start: 2015-02-01
+    end: 2018-01-01
+    company:
+      name: EPAM Systems, Inc.
+      site: https://epam.com
+    title: Lead Software Developer
+    domain: Travel & Hospitality
+    description: >
+      Working in "Continuous Delivery" team.
+      I consider this part of my career as a darkest one yet and a total failure.
+    responsibilities:
+      - Designing Jenkins pipelines
+      - Supporting Jenkins cluster
+      - Extending Jenkins with custom plugins
+      - Writing and supporting Chef deployment scripts
+      - Writing and supporting internal tools for statistics & monitoring
+      - Dockerizing existing applications
+    technologies:
       - Jenkins
-      - ... you name it
+      - Chef
+      - Spring 4.x
+      - Spring Boot 1.x
+      - MongoDB
+      - Docker
   - start: 2013-06-01
     end: 2015-02-01
     company:
