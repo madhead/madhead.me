@@ -27,7 +27,7 @@
         <div class="sectionContent">
           <article>
             <p>
-              I am a {{ lang.NumFmt 0 (div (now.Sub (time .general.birthdate)).Hours 8760) }} years old experienced but still open-minded {{ lower .general.title  }}.
+              I am a {{ lang.NumFmt 0 (math.Floor (div (now.Sub (time .general.birthdate)).Hours 8760)) }} years old experienced but still open-minded {{ lower .general.title  }}.
               Currently, my level is senior to lead, although I don't like titles.
               I have a strong technical background but I don't skimp on a soft skills as well.
               I am eager to be challenged in order to grow and improve myself.
