@@ -290,17 +290,19 @@ talks:
     links:
       event: https://bkug.by/2017/12/20/otchet-o-bkug-7
       video: https://www.youtube.com/watch?v=TobSxJVOyzU
-      slides:
+      slides: https://www.slideshare.net/SiarheiKrukau/kotlin-gradle-fun
   - name: 'K/N S/P'
     event: 'BKUG #8'
     links:
       event: https://bkug.by/2018/02/23/otchet-o-bkug-8
       video: https://www.youtube.com/watch?v=bfEJZwSmy1g
-      slides: https://docs.google.com/presentation/d/1LeXb75yXdgZwFBT0WlXde3-J4eMmLwKMhesaqo9xEFc/edit?usp=sharing
+      slides: https://drive.google.com/open?id=1LeXb75yXdgZwFBT0WlXde3-J4eMmLwKMhesaqo9xEFc
   - name: 'Kotlin Gradle DSL'
     event: 'K⋅Night Kyiv 2018'
     links:
       event: https://2event.com/events/1235410
+      video: https://www.youtube.com/watch?v=H4XRX6tbksw
+      slides: https://drive.google.com/open?id=1_9IQZZ0wvDmd4LWRv19FJpsgdej0DE3Za3O-_CYNY4k
 hobbies:
   - Snowboards
   - Longboards
