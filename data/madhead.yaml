@@ -303,6 +303,12 @@ talks:
       event: https://2event.com/events/1235410
       video: https://www.youtube.com/watch?v=H4XRX6tbksw
       slides: https://drive.google.com/open?id=1_9IQZZ0wvDmd4LWRv19FJpsgdej0DE3Za3O-_CYNY4k
+  - name: 'K/N S/P'
+    event: 'Kotlin Moscow User Group Meetup'
+    links:
+      event: https://www.meetup.com/KotlinMoscow/events/250681145/
+      video: https://www.youtube.com/watch?v=02ELTg8BNo0
+      slides: https://drive.google.com/open?id=1YaXYUCBMLOE6PqK69KWXO0yGUzMV_rpdFFzCu2UcVq0
 hobbies:
   - Snowboards
   - Longboards
