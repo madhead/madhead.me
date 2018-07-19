@@ -3,8 +3,8 @@ title: Большие данные в современной биологии
 date: 2018-07-08T00:57:00+03:00
 hidden: true
 tags:
-  - JPoint 2018
-  - Talk review
+  - jpoint 2018
+  - talk review
 ---
 
 Заметки по https://jpoint.ru/talks/6lpdnvfhk84iwcemw4asik[докладу] Михаила Гельфанда "Большие данные в современной биологии" на JPoint 2018.

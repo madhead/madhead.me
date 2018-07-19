@@ -3,9 +3,9 @@ title: "На плечах гигантов: языки, у которых учи
 date: 2018-07-03T15:11:00+03:00
 hidden: true
 tags:
-  - JPoint 2018
-  - Kotlin
-  - Talk review
+  - jpoint 2018
+  - kotlin
+  - talk review
 ---
 
 Заметки по https://jpoint.ru/talks/5wmp0rstnkcogqmqq02mac[докладу] Андрея Бреслава "На плечах гигантов: языки, у которых учился Kotlin" на JPoint 2018.

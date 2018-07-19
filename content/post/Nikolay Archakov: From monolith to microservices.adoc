@@ -3,8 +3,8 @@ title: От монолита к микросервисам
 date: 2018-07-08T00:53:00+03:00
 hidden: true
 tags:
-  - JPoint 2018
-  - Talk review
+  - jpoint 2018
+  - talk review
 ---
 
 Заметки по https://jpoint.ru/talks/3ydrjbmoegeu2qqumyywyw[докладу] Николая Арчакова "От монолита к микросервисам" на JPoint 2018.

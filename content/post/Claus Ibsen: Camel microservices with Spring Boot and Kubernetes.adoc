@@ -3,13 +3,13 @@ title: Camel microservices with Spring Boot and Kubernetes
 date: 2018-07-04T00:29:00+03:00
 hidden: true
 tags:
-  - JPoint 2018
-  - Camel
-  - Kubernetes
-  - Spring Boot
-  - Spring Cloud
-  - Hystrix
-  - Talk review
+  - jpoint 2018
+  - camel
+  - kubernetes
+  - spring boot
+  - spring cloud
+  - hystrix
+  - talk review
 ---
 
 Заметки по https://jpoint.ru/talks/2o549q9npuyuemkqmy4yo6[докладу] Клауса Ибсена "Camel microservices with Spring Boot and Kubernetes" на JPoint 2018.

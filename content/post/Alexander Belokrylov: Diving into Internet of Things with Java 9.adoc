@@ -3,10 +3,10 @@ title: Погружение в Интернет Вещей с Java 9
 date: 2018-07-03T16:38:00+03:00
 hidden: true
 tags:
-  - JPoint 2018
-  - Java 9
-  - IoT
-  - Talk review
+  - jpoint 2018
+  - java 9
+  - iot
+  - talk review
 ---
 
 Заметки по https://jpoint.ru/talks/56bxhiv8c4q0yyskumikso[докладу] Александра Белокрылова "Погружение в Интернет Вещей с Java 9" на JPoint 2018.
