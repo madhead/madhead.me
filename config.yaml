@@ -1,7 +1,7 @@
 baseurl: https://madhead.me/
 title: madhead
 author: madhead <siarhei.krukau@gmail.com>
-theme: BluestNight
+theme: minimo
 enableRobotsTXT: true
 googleAnalytics: UA-101212543-1
 disqusShortname: madhead-me
