@@ -1,0 +1,51 @@
+---
+title: AWS Lambda environment variables → AWS SSM parameters in one (long) bash line
+date: 2018-07-04T04:47:00+03:00
+tags:
+  - bash
+  - magic
+  - bash magic
+  - one-liner
+---
+
+So, you want to use AWS SSM parameters instead of AWS Lambda environment variables?
+But you already have dozens of variables defined?
+
+Keep calm (tested in production) and use this one-liner.
+
+<!--more-->
+
+[source,bash]
+----
+aws lambda list-functions --query 'Functions[?starts_with(FunctionName, `prod-`) == `true`].FunctionName' | jq '.[]' | xargs -L 1 -I {} aws lambda get-function-configuration --function-name {} --query Environment.Variables | jq -cr 'keys[] as $key | {Name: "/prod/\($key)", Value: "\(.[$key])", Type: "String"}' | xargs -d'\n' -I {} echo "aws ssm put-parameter --cli-input-json '{}'" | xargs -d'\n' -tI {} bash -c "{} || true"
+----
+
+Nobody in sane will run one-liners from the internet without the explanations.
+So here it is:
+
+[source,bash]
+----
+aws lambda list-functions --query 'Functions[?starts_with(FunctionName, `prod`) == `true`].FunctionName' | # Select functions
+jq '.[]' | # Previous command returns an array, so expand it
+xargs -L 1 -I {} aws lambda get-function-configuration --function-name {} --query Environment.Variables | # Get configuration for each function
+jq -cr 'keys[] as $key | {Name: "/prod/\($key)", Value: "\(.[$key])", Type: "String"}' | # Craft a JSON for later use with aws ssm
+xargs -d'\n' -I {} echo "aws ssm put-parameter --cli-input-json '{}'" | # Craft an aws ssm put-parameter command
+xargs -d'\n' -tI {} bash -c "{} || true" # Finally, evaluate that command
+----
+
+BTW copy-pasting it in `bash` with all the comments will (https://stackoverflow.com/a/23872003/750510[surprisingly]) work fine!:
+
+Some notes:
+
+ . The whole flow assumes single AWS region is used (and defined in `~/.aws/config` for used `AWS_PROFILE`).
+Add `--region` options where needed.
+ . You can use any valid query to get function names on the first step.
+ . JSON is used as input to `aws ssm put-parameter` because of https://github.com/aws/aws-cli/issues/2507[automatic] `http://` and `https://` https://github.com/aws/aws-cli/issues/3076[expansion] in https://github.com/aws/aws-cli/issues/2577[some places]!
+This lame behavior https://github.com/aws/aws-cli/issues/3398[was] https://github.com/aws/aws-cli/pull/3384[fixed] just a few hours prior to writing this article!
+ . Instead of hustling with `jq` on the final stage trying to pass arguments to `xarg aws ssm put parameter`, IMHO, it's much more simpler to craft the command you need as a string and then just eval it.
+
+What I've learned about `bash` during crafting this shitty pipeline:
+
+ . Damn `xargs` just "swallows" quotes (both single and double) in its (standard) input when passing values to commands!
+Use `-d` (or `-0`) flag to override this behavior.
+Compare `echo "'test'" | xargs echo` vs `echo "'test'" | xargs -d'\n' echo`

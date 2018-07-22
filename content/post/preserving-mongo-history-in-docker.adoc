@@ -1,0 +1,29 @@
+---
+title: Preserving MongoDB shell history in Docker
+date: 2018-07-07T05:24:00+03:00
+tags:
+  - linux
+  - docker
+  - lifehack
+  - bash
+---
+
+So, you run `mongo` in disposable Docker containers and want to preserve shell history?
+Say no more, pal.
+
+<!--more-->
+
+Just mount your `~/.dbshell` file to `/.dbshell` in the container to preserve the history between runs.
+You can use the same technique to mount `~/.mongorc.js` as well:
+
+[source]
+----
+docker run \
+  --rm \
+  --interactive \
+  --tty \
+  --mount type=bind,source=/home/madhead/.mongorc.js,target=/.mongorc.js \
+  --mount type=bind,source=/home/madhead/.dbshell,target=/.dbshell \
+  -u $(id -u):$(id -g) \
+  mongo:latest mongo -u user -p s3cr3t mongo.example.com:27017/example
+----

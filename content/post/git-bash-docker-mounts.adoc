@@ -1,0 +1,14 @@
+---
+title: Mounting directories for Docker containers from Git Bash (Windows)
+date: 2018-03-21T16:50:00+03:00
+tags:
+  - windows
+  - docker
+---
+
+Just use double slashes when mounting and accessing directories from Git Bash in Docker on Windows:
+
+[source,bash]
+----
+docker run --rm -it -v //c//Users//Siarhei_Krukau//Downloads:/test alpine ls -la //test
+----

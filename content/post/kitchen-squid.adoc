@@ -1,0 +1,68 @@
+---
+title: Speeding up Kitchen converges with Squid
+date: 2017-09-17T01:10:00+03:00
+tags:
+  - squid
+  - vagrant
+  - chef
+  - kitchen
+---
+
+One day, you may find yourself smoking too often or drinking a lot of coffee while waiting for the files to be downloaded during provisioning of Vagrant / Kitchen VMs.
+E.g: JDK size is ~200 MB and it may take a dozen of minutes to download during the execution of the `java` recipe.
+You can save precious seconds of your life with http://www.squid-cache.org[Squid].
+Though some configuration is required, it wont take more than 5 minutes.
+
+<!--more-->
+
+First you need to download and install Squid.
+Many operating systems include Squid in their ports/packages system.
+This is an easy way to get Squid up and running quickly, and a good way to keep up-to-date with Squid versions supported by your operating system.
+In some cases, you may want (or be forced) to download a http://wiki.squid-cache.org/SquidFaq/BinaryPackages[binary package of Squid].
+They are available for a variety of platforms, including Windows.
+
+Latest Squid versions by default do not use disk cache, only in-memory caches.
+This won't work for huge binaries like JDK, so we'll tune the configs.
+I'm assuming the reader is using Linux, and the configuration examples will target this OS.
+Enable http://www.squid-cache.org/Doc/config/cache_dir[disk caching] by adding / uncommenting this line in the config:
+
+[source]
+----
+cache_dir ufs /var/cache/squid 10240 16 256
+----
+
+10240 MB ought to be enough for anybody.
+
+Then, increase http://www.squid-cache.org/Doc/config/maximum_object_size[maximum size] of the objects that can be cached:
+
+[source]
+----
+maximum_object_size 500 MB
+----
+
+Provide a http://www.squid-cache.org/Doc/config/refresh_pattern[refresh pattern] for the files you want to cache:
+
+[source]
+----
+refresh_pattern -i \.tar\.gz$   10080   100%    43200 override-expire ignore-no-cache ignore-no-store ignore-no-private
+----
+
+Now, stop Squid (if it's running) and re-create cache directories with `squid -z`.
+
+Last thing left is to enable Squid proxy for Vagrant / Kitchen.
+Add these lines to a file named `.kitchen.local.yml` (it is gitignored by default):
+
+[source, YAML]
+----
+provisioner:
+  http_proxy: http://192.168.100.20:3128
+  https_proxy: http://192.168.100.20:3128
+  no_proxy: localhost, 127.0.0.1
+----
+
+`192.168.100.20` here is the IP of your Squid-powered computer as it is seen from VirtualBox's (or whatever the `driver` is) network.
+It may be your host machine (running Vagrant / Kitchen), but `127.0.0.1` and `localhost` obviously won't work, because the IP must be accessible from the Vagrant / Kitchen VM.
+Though `https_proxy` is listed here, https://wiki.squid-cache.org/Features/HTTPS[intercepting and caching HTTPS traffic] has some nuances.
+And don't forget to exclude `localhost` from being proxed or some things may fail to work properly!
+
+Start Squid and enjoy faster provisioning!
