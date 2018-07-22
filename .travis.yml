@@ -1,0 +1,21 @@
+dist: trusty
+lang: ruby
+rvm:
+  - 2.2
+branches:
+  only:
+  - source
+install:
+  - bundle install --jobs=3 --retry=3
+  - wget https://github.com/gohugoio/hugo/releases/download/v0.37/hugo_0.37_Linux-64bit.deb
+  - sudo dpkg -i hugo_0.37_Linux-64bit.deb
+script:
+  - hugo
+deploy:
+  on:
+    branch: source
+  github_token: $GITHUB_TOKEN
+  provider: pages
+  skip_cleanup: true
+  local_dir: public
+  target_branch: master
