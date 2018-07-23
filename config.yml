@@ -1,0 +1,29 @@
+---
+baseurl:          https://madhead.me/
+
+theme:            minimo
+
+enableRobotsTXT:  true
+
+googleAnalytics:  UA-101212543-1
+disqusShortname:  madhead-me
+
+taxonomies:
+  tag:            tags
+
+paginate:         10
+
+params:
+  settings:
+    accentColor:  '#000000'
+  sidebar:
+    enable:       true
+  widgets:
+    sidebar:
+      - about
+      - sidebar_menu
+menu:
+  sidebar:
+    - identifier: posts
+      name:       posts
+      url:        /posts/

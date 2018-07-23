@@ -1,5 +1,3 @@
-image:https://travis-ci.org/madhead/madhead.github.io.svg?branch=source["Build Status", link="https://travis-ci.org/madhead/madhead.github.io"]
-
 = madhead's blog
 
 Source of http://madhead.me
