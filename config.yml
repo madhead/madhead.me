@@ -27,3 +27,6 @@ menu:
     - identifier: posts
       name:       posts
       url:        /posts/
+    - identifier: tags
+      name:       tags
+      url:        /tags/
