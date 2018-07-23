@@ -17,6 +17,7 @@ params:
   settings:
     accentColor:  '#000000'
     showReadingTime: true
+    hideEntryNavigation: true
     dateFormat: 2006-01-02
   sidebar:
     enable:       true
