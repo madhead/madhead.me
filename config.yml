@@ -16,6 +16,7 @@ paginate:         10
 params:
   settings:
     accentColor:  '#000000'
+    showReadingTime: true
   sidebar:
     enable:       true
   widgets:
