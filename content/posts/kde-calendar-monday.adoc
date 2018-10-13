@@ -1,0 +1,53 @@
+---
+title: Using Monday as a first day of week in KDE 5
+date: 2018-08-18T22:01:00+03:00
+tags:
+  - linux
+  - kde
+---
+
+`en_US.UTF-8` is a great locale and I am using it for my KDE desktop because it gives me full English UI, whereeas other locales can result in semi-translated UIs.
+But it has some flaws.
+For example, weeks begin on Sunday in USA.
+It's not how we do here in Europe and it's really annoying to see Sunday as a first day of week in a calendar widget.
+Unfortunatelly, there is no knob for this setting (or my Google-fu failed me), so let's fix it in a dirty way.
+
+<!--more-->
+
+Find a file named `MonthView.qml` somewhere under `/usr`:
+
+[source,bash]
+----
+find /usr -name MonthView.qml 2> /dev/null
+----
+
+`2> /dev/null` filters out any errors.
+
+On my system the file was located at `/usr/lib/qt/qml/org/kde/plasma/calendar/MonthView.qml`.
+
+Open it with root privileges and find a block like this:
+
+[source,qml]
+----
+Calendar {
+    id: calendarBackend
+
+    days: 7
+    weeks: 6
+    firstDayOfWeek: Qt.locale().firstDayOfWeek
+    today: root.today
+
+    Component.onCompleted: {
+        daysModel.setPluginsManager(EventPluginsManager);
+    }
+
+    onYearChanged: {
+        updateYearOverview()
+        updateDecadeOverview()
+    }
+}
+----
+
+Replace `firstDayOfWeek: Qt.locale().firstDayOfWeek` with `firstDayOfWeek: 1`.
+
+You're done!
