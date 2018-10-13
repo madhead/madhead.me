@@ -11,6 +11,8 @@ disqusShortname:  madhead-me
 taxonomies:
   tag:            tags
 
+preserveTaxonomyNames: true
+
 paginate:         10
 
 params:
