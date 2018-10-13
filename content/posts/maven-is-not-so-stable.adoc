@@ -1,0 +1,49 @@
+---
+title: Maven is not as stable as many think
+date: 2018-08-19T00:34:00+03:00
+tags:
+  - maven
+  - gradle
+---
+
+Sometimes I'm trying to show others that there is a better alternative to Maven: Gradle.
+I'm trying to show them how Gradle can make things easy & possible whereas achieving the same results in Maven are Herculean labors or literally impossible.
+I often hear in reply: "Gradle sucks because it's a hipster technology. It's new and unstable. Will you help me if something goes wrong?".
+
+<!--more-->
+
+And I retreat.
+Not because I won't help (often I will), but because I don't enjoy arguing [with stubborn people].
+
+I do not understand why some people tend to think that one technology is more proven that other just because first one exists for a longer period of time.
+No one them would say that UNIX is better than Windows or macOS, ironically.
+
+I recently read a documentation of popular Java / Scala framework: https://flink.apache.org[Apache Flink].
+I spotted an interesting note https://ci.apache.org/projects/flink/flink-docs-release-1.6/start/building.html#build-flink[here]:
+
+[quote]
+NOTE: Maven 3.3.x can build Flink, but will not properly shade away certain dependencies. Maven 3.2.5 creates the libraries properly. To build unit tests use Java 8u51 or above to prevent failures in unit tests that use the PowerMock runner.
+
+Or, to be more visual:
+
+{{< figure src="/images/post/maven-is-not-so-stable/001.jpg" >}}
+
+One more time:
+
+You cannot properly build Apache Flink with the latest version of the most stable and battle-proven JVM-world build tool!
+
+Well, you can get some results, but something will be broken, as I understood.
+I don't know what is the impact, neither I know how many people are affected.
+
+I just want to say:
+
+ 1. Use wrappers.
+There is one https://github.com/takari/maven-wrapper[for Maven], there is one https://docs.gradle.org/current/userguide/gradle_wrapper.html[for Gradle].
+Use them when you cannot fully isolate your build (i.e. using Docker) or when you need a specific version.
+When you're using a wrapper there is no need to document build tool versions.
++
+Or just use them for no reason.
+ 2. Stop saying "unstable" and "not proven" for the technologies that you're just to lazy to get familiar with.
+ 3. Things can go wrong with any tool at any time.
+ 4. Don't use dirty hacks & tricks because they can block upgrades.
+ 5. If something is broken on upgrade don't abort the upgrade, fix things instead.

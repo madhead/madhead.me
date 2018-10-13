@@ -1,0 +1,56 @@
+---
+title: Hard lesson from NVIDIA
+date: 2018-08-19T01:42:00+03:00
+tags:
+  - linux
+  - nvidia
+---
+
+Last week I've managed to accidentally break my Linux installation.
+Probably, the first time for the last ten years where Linux behaved truly "unstable".
+
+<!--more-->
+
+I am a happy https://manjaro.org[Manjaro]/KDE user for almost three years.
+It's a rolling release distro and it really lasted this timespan without any installations.
+Once I had a problem with it after partially applying the upgrade, but it was easy to fix.
+I've never had any issues with hardware, drivers, displays and finding software.
+I am neither a gamer, nor a cryptopunk or scientist.
+So I never interested in my GPU.
+I even didn't know what model do I have except that it is NVIDIA.
+
+Till last Monday.
+
+I wanted to play with a software that needs OpenGL 3.3.
+It's an eight years old OpenGL, so what could possibly go wrong?
+I run `glxinfo | grep "OpenGL version"` and got the result: `OpenGL version string: 3.0 Mesa 18.1.6`.
+
+Damn, I need to install GPU drivers!
+
+I decided to go with proprietary version for no reason.
+It's the official driver version, right?
+It should work!
+
+So, I've downloaded one from their site, matching my GPU and installed it.
+Last step was to use it for X.Org config (yeah, I'm still not on Wayland):
+
+[source,bash]
+----
+sudo nvidia-xconfig
+----
+
+BOOM!
+
+*Screen not found!*
+
+That command totally ruined my X.Org config and, just like a spit in my face, it created an empty "backup" that I was not able to use for repair.
+
+Then I found https://superuser.com/questions/1325471/x-server-wont-start-after-nvidia-xconfig-command#comment1977019_1325471[this comment] on "Super User" and https://bbs.archlinux.org/viewtopic.php?pid=1737318#p1737318[a lot of threads] https://askubuntu.com/q/235823/171572[across] https://ubuntuforums.org/showthread.php?t=1759810[the Internet] that warn people of using `nvidia-xconfig`.
+
+I had to do a reinstall.
+
+After the reinstall I just tried the second path: using https://bumblebee-project.org[Bumblbee].
+There is also an https://wiki.archlinux.org/index.php/bumblebee[awesome article] on Arch Wiki that lead me to success.
+Even better, now I can use GPU just when I really need it, thus saving the battery, by uswing `optirun`.
+
+Always read the docs first and have a retreat plan.

@@ -1,0 +1,56 @@
+---
+title: '(Alpine + AWS CLI + Ansible) @ Docker'
+date: 2018-09-15T17:14:00+03:00
+tags:
+  - docker
+  - aws cli
+  - ansible
+  - pet projects
+---
+
+I'm using https://bitbucket.org/product/features/pipelines[Bitbucket Pipelines] widely for CI/CD at my current position.
+It sucks a little if compare it with https://about.gitlab.com/features/gitlab-ci-cd[GitLab CI/CD], but I don't complain.
+
+<!--more-->
+
+One common restriction in both: you cannot use different images in a single step (job).
+It sounds legit: steps (jobs) are atomic execution units.
+However, in GitLab you could group jobs in stages, while in Bitbucket there seems to be no grouping at all.
+So, if your deployment logically consists of multiple different actions, like deploying https://aws.amazon.com/lambda[Lambdas] with https://aws.amazon.com/cli[AWS CLI] and running https://www.ansible.com[Ansible] plays for EC2 instances, you're out of luck in Bitbucket: you need two steps — one with AWS CLI and another with Ansible.
+Sucking deeper: if you want to use https://confluence.atlassian.com/bitbucket/bitbucket-deployments-940695276.html[deployments feature] (you, generally, want) you cannot have multiple steps with the same `deployment` key.
+
+Usually, enterprises tend to build "The Image" that holds everything they need to build the project and use it across all steps, so all the tools are available at every single step.
+We did that as well.
+The image was like 2 gigs and it just suck.
+
+I believe in https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well[DOTADIW / Unix way] and I think we should reuse community images where possible.
+For example, there are awesome https://hub.docker.com/_/openjdk/[OpenJDK builds] available for free @ Docker Hub, why not use them for Java build steps?
+
+That way, we thrown away our "The Image" and seen a great improvement in build times due to better image caching and container startup times.
+The problem is that we cannot deploy anything due to the problem I've stated above.
+I've googled for AWS CLI + Ansible images on the Net, but they all were either abandoned, or used Ubuntu.
+
+I believe I can do better with awesome https://alpinelinux.org[Alpine Linux], so I've created https://hub.docker.com/r/madhead/awesible[this image].
+
+It's only 63MiB and it contains only the tools we need — AWS CLI + Ansible.
+Though the Ansible version is not the latest 2.5, it fits us well.
+It's https://gitlab.com/madhead-docker/awesible[fully open sourced] (BTW, I'm moving to GitLab completely, with automatic https://github.com/madhead/awesible[repo mirroring] to GitHub).
+
+Finally, my friends told me, that the name is cool.
+
+Feel free to use it if you need.
+Oh, and here is the example for BitBucket:
+
+.bitbucket-pipelines.yml
+[source,yml]
+----
+step:
+  name: Deploy to UAT
+  image:
+    name: madhead/awesible:latest
+  trigger: manual
+  deployment: staging
+  script:
+    - aws lambda update-function-code --region us-west-1 --function-name uat-lambda --s3-bucket us-west-1-artifacts --publish --s3-key ${BITBUCKET_REPO_SLUG}/${BITBUCKET_BUILD_NUMBER}/uat-lambda.jar
+    - ansible-playbook uat.yml -i ec2.py
+----

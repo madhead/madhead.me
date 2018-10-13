@@ -1,0 +1,54 @@
+---
+title: '(Alpine + JFrog CLI) @ Docker'
+date: 2018-09-16T02:31:00+03:00
+tags:
+  - docker
+  - jfrog cli
+  - pet projects
+---
+
+One more article about my Docker images.
+
+<!--more-->
+
+https://jfrog.com[JFrog] runs an awesome https://jfrog.com/bintray[Bintray] — universal distribution platform — as they say on their site.
+You can host literally any of your open-source artifacts there for free: Docker images, NPM libraries, DEB and RPM packages, Maven JARs, Conan and NuGet package, Vagrant boxes.
+Or just go with "Generic" and store other formats.
+JFrog also stands behind https://jfrog.com/artifactory[Artifactory] and some other tools.
+
+It's really cool and you should give it a try as an alternative to https://help.github.com/articles/about-releases[GitHub's releases].
+
+Note for Gradle users: Bintray hosts https://bintray.com/bintray/jcenter[JCenter] — the largest Maven repo on the Earth.
+JCenter "proxies" https://search.maven.org[Maven Central] and can be used as a https://stackoverflow.com/q/25137263/750510[drop-in replacement] for it.
+Plus, it has other artifacts not found in Maven Central.
+https://docs.gradle.org/current/userguide/declaring_repositories.html#example_declaring_jcenter_repository_as_source_for_resolving_dependencies[Using JCenter in Gradle] is super-easy: just add `jcenter()` to the `repositories` section.
+
+Though, Bintray's search (and JCenter's as a result) sucks.
+
+You can upload / publish your artifacts to Bintray using a plugin for your build tool (I know there is one for https://github.com/bintray/gradle-bintray-plugin[Gradle]) or you can use their https://bintray.com/docs/api[REST API].
+It's as easy as HTTP POST.
+
+However, there is better approach: using https://www.jfrog.com/confluence/display/CLI/JFrog+CLI[JFrog CLI].
+It's a "one tool to rule them all" for all JFrog's products.
+Using the CLI is even simpler then `curl` and hides any protocol hustle and implementation details which is good.
+
+I want to use JFrog CLI in my GitLab / Bitbucket pipelines, so I need a Docker image with it.
+Let's see what Docker Hub has?
+It has https://hub.docker.com/r/pdgwien/docker-jfrog-cli[several] https://hub.docker.com/r/meisterplan/jfrog-cli[automated] https://hub.docker.com/r/nullreference/jfrogcli[builds] with JFrog CLI @ Ubuntu / Debian and a dozen of non-automated builds which I didn't even bother to check: non-automated builds are crap and should be banned.
+
+I believe we can cut image size up to five times (actually, ~7 times) if we choose https://alpinelinux.org[Alpine] as a base.
+
+I was surprised to find https://github.com/jfrog/jfrog-cli-go/issues/179[this issue] and no image in Hub, so untill JFrog publish their image I made https://hub.docker.com/r/madhead/lv-alpina[my own].
+
+The usage is pretty simple:
+
+.gitlab.yml
+[source,yml]
+----
+publish:
+  stage: publish
+  image:
+    name: madhead/lv-alpina:latest
+  script:
+    - JFROG_CLI_OFFER_CONFIG=false jfrog bt upload --user user --key key path/to/binary/for.upload bintray-user/bintray-repo/bintray-package/version path/in/bintray-repo/
+----
