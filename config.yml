@@ -19,6 +19,8 @@ params:
     showReadingTime: true
     hideEntryNavigation: true
     dateFormat: 2006-01-02
+    archiveDateFormat: 2006-01-02
+    listDateFormat: 2006-01-02
   sidebar:
     enable:       true
   widgets:
