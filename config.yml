@@ -25,10 +25,18 @@ params:
     listDateFormat: 2006-01-02
   sidebar:
     enable:       true
+  social:
+    github: madhead
+    twitter: madhead_
+    instagram: madhead_
+    linkedin: krukaus
+    telegram: xXmadheadXx
   widgets:
     sidebar:
       - about
       - sidebar_menu
+      - social_menu
+    homepage:
 menu:
   sidebar:
     - identifier: posts
