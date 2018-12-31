@@ -1,0 +1,146 @@
+---
+title: Amazon CloudWatch Logs Insights + AWS Lambda + Log4j 2 JSONLayout = 😎
+date: 2018-12-10T01:53:00+03:00
+tags:
+  - aws
+  - cloudwatch
+  - json
+  - log4j2
+---
+
+Amazon recently announced https://aws.amazon.com/blogs/aws/new-amazon-cloudwatch-logs-insights-fast-interactive-log-analytics[Amazon CloudWatch Logs Insights] on AWS re:Invent 2018 and it's a great improvement comparing to Amazon CloudWatch Logs.
+
+Let's see how to use it with https://logging.apache.org/log4j/2.x[Apache Log4j 2] in Java-based AWS Lambdas.
+
+<!--more-->
+
+Let's say we want to write a Lambda that simulates simplified D&D attack / defense D20 roll.
+You call the lambda with a numeric `attack`, it rolls the dice and returns a verdict: whether the attack was dodged or not.
+
+We want to log literally every action taken by the Lambda with a different level and be able to effectively query the logs.
+Let's say that as a bonus we want to be able to query the logs by attack / defense rolls.
+
+Lambda code is simple:
+
+.Handler.kt
+[source,kotlin]
+----
+class Handler : RequestStreamHandler {
+    companion object {
+        @JvmStatic
+        private val logger = LogManager.getLogger(Handler::class.java)
+    }
+
+    override fun handleRequest(input: InputStream, output: OutputStream, context: Context) {
+        val request = input.bufferedReader().use { it.readText() }
+
+        logger.debug("Incoming request: {}", request)
+
+        try {
+            val attack = request.toInt()
+
+            logger.debug("Rolling D20…")
+
+            val defense = Random.nextInt(1..20)
+
+            ThreadContext.put("attack", attack.toString())
+            ThreadContext.put("defense", defense.toString())
+
+            logger.info("Defense {}", defense)
+
+            when {
+                defense > attack -> logger.info("Miss")
+                defense == attack -> logger.warn("That was close")
+                else -> throw Exception("Hit")
+            }
+
+            output.bufferedWriter().use { it.write("ヽ(´ー｀)ノ") }
+        } catch (nfe: NumberFormatException) {
+            logger.error("Cannot parse attack", nfe)
+
+            output.bufferedWriter().use { it.write("¯\\_(ツ)_/¯") }
+        } catch (e: Exception) {
+            logger.error("Something went wrong", e)
+
+            output.bufferedWriter().use { it.write("(✖╭╮✖)") }
+        }
+    }
+}
+----
+
+We're storing `attack` and `defense` values as items of a https://logging.apache.org/log4j/2.x/manual/thread-context.html[Thread Context] so they become available as standalone properties later.
+
+Adding needed dependencies:
+
+.build.gradle.kts
+[source,kotlin]
+----
+dependencies {
+    …
+    implementation(platform("org.apache.logging.log4j:log4j-bom:2.11.1"))
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.9.7")
+    implementation("com.amazonaws:aws-lambda-java-log4j2:1.1.0")
+    …
+}
+----
+
+Make sure to use the latest Log4j 2 JARs because `KeyValuePair` https://github.com/apache/logging-log4j2/commit/dad62657690ded5ab1f0e8524fed4efd5f418edb[became available] starting from version 2.10.x, while `com.amazonaws:aws-lambda-java-log4j2:1.1.0` depends on 2.8.x.
+
+Configuring the https://imperceptiblethoughts.com/shadow[`shadowJar` task].
+Make sure not to skip this, because failing to do so will break the logging.
+
+.build.gradle.kts
+[source,kotlin]
+----
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import com.github.jengelman.gradle.plugins.shadow.transformers.Log4j2PluginsCacheFileTransformer
+
+plugins {
+    …
+    id("com.github.johnrengelman.shadow").version("4.0.3")
+    …
+}
+
+tasks {
+    …
+    val shadowJar by getting(ShadowJar::class) {
+        transform(Log4j2PluginsCacheFileTransformer::class.java)
+    }
+    …
+}
+----
+
+Now `log4j2.xml` — configuration file that needs to be placed in the root of Lambda's JAR classpath:
+
+.log4j2.xml
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" packages="com.amazonaws.services.lambda.runtime.log4j2">  <!-- 1 -->
+  <Appenders>
+    <Lambda name="Lambda">                                                             <!-- 2 -->
+      <JsonLayout>                                                                     <!-- 3 -->
+        <Complete>false</Complete>                                                     <!-- 4 -->
+        <Compact>true</Compact>                                                        <!-- 5 -->
+        <KeyValuePair key="AWSRequestId" value="$${ctx:AWSRequestId}"/>                <!-- 6 -->
+        <KeyValuePair key="attack" value="$${ctx:attack}"/>                            <!-- 7 -->
+        <KeyValuePair key="defense" value="$${ctx:defense}"/>                          <!-- 8 -->
+      </JsonLayout>
+    </Lambda>
+  </Appenders>
+  <Loggers>
+    <Root level="${env:LOG_THRESHOLD:-INFO}">                                          <!-- 9 -->
+      <AppenderRef ref="Lambda"/>
+    </Root>
+  </Loggers>
+</Configuration>
+----
+<1> test
+<2> test
+<3> test
+<4> test
+<5> test
+<6> test
+<7> test
+<8> test
+<9> test
