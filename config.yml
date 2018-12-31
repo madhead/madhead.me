@@ -15,6 +15,8 @@ preserveTaxonomyNames: true
 
 paginate:         10
 
+title: madhead
+
 params:
   settings:
     accentColor:  '#000000'
@@ -26,24 +28,31 @@ params:
   sidebar:
     enable:       true
   social:
-    github: madhead
+    email: siarhei.krukau@gmail.com
     gitlab: madhead
-    twitter: madhead_
+    github: madhead
+    stackoverflow: 750510
+    telegram: xXmadheadXx
+    linkedin: krukaus
     instagram: madhead_
     youtube: UCO2UZ6hUzjn9XQIdwwkcXJQ
-    linkedin: krukaus
-    telegram: xXmadheadXx
+    twitter: madhead_
   widgets:
     sidebar:
       - about
       - sidebar_menu
       - social_menu
-    homepage:
 menu:
   sidebar:
     - identifier: posts
       name:       posts
       url:        /posts/
+      weight:     1
     - identifier: tags
       name:       tags
       url:        /tags/
+      weight:     2
+    - identifier: cv
+      name:       cv
+      url:        /cv/
+      weight:     3

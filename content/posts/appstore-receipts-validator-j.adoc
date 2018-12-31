@@ -1,0 +1,31 @@
+---
+title: 'Java classes for server-side App Store receipts validation'
+date: 2018-11-13T21:00:00+03:00
+tags:
+  - java
+  - aws
+  - aws lambda
+  - aws api gateway
+  - pet projects
+---
+
+I'm working on a bunch of apps that need to verify AppStore receipts on a JVM-based server.
+The process https://developer.apple.com/library/archive/releasenotes/General/ValidateAppStoreReceipt/Chapters/ValidateRemotely.html#//apple_ref/doc/uid/TP40010573-CH104-SW1[is described in Apples's Documentation Archive] but lacks of any SDK / libraries.
+So I made one to improve code reuse.
+
+<!--more-->
+
+I assume Jackson is the most popular and widely used JSON library in the JVM world, so the library depends on it for field mappings.
+Guava is used for `equals` / `hashCode` / `toString` and that's it.
+The library is https://bintray.com/bintray/jcenter?filterByPkgName=by.dev.madhead.utils.appstore_receipts_validator%3Amodel[published to JCenter] and requires only one line in your Gradle build (assuming you're already using `jcenter()` repo):
+
+[source,kotlin]
+----
+repositories {
+  jcenter()
+}
+
+dependencies {
+  implementation("by.dev.madhead.utils.appstore_receipts_validator:model:1.1.0")
+}
+----

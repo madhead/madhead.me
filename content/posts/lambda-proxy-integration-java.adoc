@@ -1,0 +1,31 @@
+---
+title: 'Java classes for AWS Lambda Proxy Integration'
+date: 2018-11-13T20:00:00+03:00
+tags:
+  - java
+  - aws
+  - aws lambda
+  - aws api gateway
+  - pet projects
+---
+
+When I had to https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html[configure Lambda Proxy Integrations in AWS API Gateway] for the second time for a week I thought about extracting Java classes in a small library for later reuse.
+
+<!--more-->
+
+Bot https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format[input] and https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format[output] formats of a Lambda with Proxy Integration are well defined and described on AWS docs site.
+However there is no reference implementation for any language available and developers have to implement those POJOs (speaking in Java terms) themselves over and over again.
+
+So, I decided to publish yet-another-aws-lambda-proxy-integration-java-library, or simply https://gitlab.com/madhead/lambda-proxy-integration-java[lambda-proxy-integration-java].
+It is https://bintray.com/bintray/jcenter?filterByPkgName=by.dev.madhead.utils.lambda_proxy_integration_java%3Amodel[available via JCenter] by `by.dev.madhead.utils.lambda_proxy_integration_java:model:${version}` coordinates with only one line in your Gradle config (assuming you're already using `jcenter()` repo):
+
+[source,kotlin]
+----
+repositories {
+  jcenter()
+}
+
+dependencies {
+  implementation("by.dev.madhead.utils.lambda_proxy_integration_java:model:1.0.0")
+}
+----
