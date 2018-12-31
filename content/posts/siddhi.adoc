@@ -1,0 +1,40 @@
+---
+title: Webscale load average with Siddhi
+date: 2018-08-12T12:55:00+03:00
+tags:
+  - siddhi
+  - cep
+  - bash
+  - linux
+---
+
+I recently faced a task of real-time processing of a stream of events.
+Thus, I've learned about https://en.wikipedia.org/wiki/Complex_event_processing[complex event processing] aka CEP.
+One pretty popular CEP tool around is https://wso2.github.io/siddhi[Siddhi].
+So here is a "Hello World", Siddhi way.
+
+<!--more-->
+
+Imagine, you need to compute something similar to https://en.wikipedia.org/wiki/Load_(computing)[CPU load average] —
+a number that represents average system load during last one, five and fifteen minutes.
+
+TIP: You can know it by issuing `top`, `htop` or `uptime` commands and stop reading the article.
+
+But those commands https://www.reddit.com/r/ProgrammerHumor/comments/62rsd0/mongodb_is_web_scale[do not scale].
+
+We'll fix that by using Siddhi, because what they say (among other) is: "run Siddhi as a server with high availability and scalability".
+
+First, let's start from a simple sampling profiler of your Linux system.
+
+[source,bash]
+----
+top -bn 2 -d 0.01 |                    # <1>
+grep 'Cpu' |                           # comment
+tail -n 1 |                            # comment
+gawk '{printf "%f\n", $2 + $4 + $6}' | # comment
+----
+<1> asdg
+
+Lenses use Docker, thus is webscale
+
+docker run -e ADV_HOST=127.0.0.1 -e EULA="https://dl.lenses.stream/d/?id=fff" -e SAMPLEDATA=0 --rm -p 3030:3030 -p 9092:9092 -p 2181:2181 -p 8081:8081 -p 9581:9581 -p 9582:9582 -p 9584:9584 -p 9585:9585 landoop/kafka-lenses-dev
