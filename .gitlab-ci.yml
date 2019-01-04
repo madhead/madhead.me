@@ -1,0 +1,46 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+  - build
+  - deploy
+
+hugo:
+  stage: build
+  image: ruby:latest
+  before_script:
+    - bundle install --jobs=3 --retry=3
+    - wget https://github.com/gohugoio/hugo/releases/download/v0.53/hugo_0.53_Linux-64bit.deb
+    - apt install ./hugo_0.53_Linux-64bit.deb -y
+  script:
+    - hugo
+  artifacts:
+    name: $CI_COMMIT_SHA-$CI_JOB_NAME
+    paths:
+      - public
+    expire_in: 1 hour
+deploy:
+  stage: deploy
+  image: madhead/git:latest
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - git config --global user.name  'GitLab'
+    - git config --global user.email '<>'
+    - mkdir ~/.ssh
+    - ssh-keyscan github.com >> ~/.ssh/known_hosts
+    - eval $(ssh-agent -s)
+    - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
+  script:
+    - cd public
+    - git init
+    - git remote add origin git@github.com:madhead/madhead.github.io.git
+    - git add .
+    - git commit --allow-empty-message --message ''
+    - git push origin master -f
+    - ssh-agent -k
+  environment:
+    name: production
+    url: https://madhead.me
+  only:
+    - master
