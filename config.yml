@@ -37,6 +37,8 @@ params:
     instagram: madhead_
     youtube: UCO2UZ6hUzjn9XQIdwwkcXJQ
     twitter: madhead_
+  comments:
+    enable: true
   widgets:
     sidebar:
       - about
