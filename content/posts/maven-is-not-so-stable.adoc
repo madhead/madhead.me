@@ -26,7 +26,7 @@ NOTE: Maven 3.3.x can build Flink, but will not properly shade away certain depe
 
 Or, to be more visual:
 
-{{< figure src="/images/post/maven-is-not-so-stable/001.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/maven-is-not-so-stable/001.jpg" >}}
 
 One more time:
 
