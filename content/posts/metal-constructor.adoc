@@ -37,19 +37,19 @@ tags:
 Вообще, шип прячется и можно просто забить на него и не возиться со вторым отверстием.
 Соединяем детали вот в такую конструкцию (видны следы раздраконивания):
 
-{{< figure src="https://i.imgur.com/ykVe3r6.jpg" >}}
-{{< figure src="https://i.imgur.com/mLdZgW1.jpg" >}}
-{{< figure src="https://i.imgur.com/5wFJasw.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/001.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/002.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/003.jpg" >}}
 
 Уголки и дополнительные скобы нужны, чтобы удерживать проектор при нестандартных углах проецирования.
 При транспортировке скобы и уголки можно прикрутить к панелям, чтобы не повредить их (конструктор сделан из очень мягкого металла).
 
-{{< figure src="https://i.imgur.com/ymJCOUr.jpg" >}}
-{{< figure src="https://i.imgur.com/ei8GHnD.jpg" >}}
-{{< figure src="https://i.imgur.com/ZEnpQDd.jpg" >}}
-{{< figure src="https://i.imgur.com/K1UEWbq.jpg" >}}
-{{< figure src="https://i.imgur.com/zuR2UUp.jpg" >}}
-{{< figure src="https://i.imgur.com/ZRAYCjP.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/004.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/005.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/006.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/007.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/008.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/metal-constructor/009.jpg" >}}
 
 Ноут, как видите, кладётся в рюкзак и подвешивается снизу к штативу, обеспечивая дополнительную устойчивость.
 

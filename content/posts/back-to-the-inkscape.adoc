@@ -30,7 +30,7 @@ http://www.backtothefuture.com/movies/movie_images/logo-bttf.aspx[Here] is the o
 
 Open an Inkscape and paste the image into the workspace:
 
-{{< figure src="/images/post/back-to-the-inkscape/001.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/001.png" >}}
 
 Nevermind those ugly raster picture artifacts: the result will be 100% https://www.reddit.com/r/ProgrammerHumor/comments/62rsd0/mongodb_is_web_scale[webscale], I promise.
 
@@ -38,12 +38,12 @@ Select a "Bezier curves" tool (kbd:[`B`]) and draw two circumscribed polygons, o
 Just click four times to make the corners sharp (if you click and drag you'll get actually a Bezier curve, as the tool's name).
 We'll use them as perspective bounds for transformations later:
 
-{{< figure src="/images/post/back-to-the-inkscape/002.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/002.png" >}}
 
 Split the upper one into two parts: one for "Back" and another one for the left arrow.
 You can do that by drawing a another line with "Bezier curves" and using a "Path" → "Division" tool (kbd:[`Ctrl` + `/`]) when a polygon and a line are selected:
 
-{{< figure src="/images/post/back-to-the-inkscape/003.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/003.png" >}}
 
 Ok, let's move on and type the text that we want to turn into awesome sticker.
 Select "Text" tool (kbd:[`F8`]) and type somewhere near the original logo:
@@ -58,7 +58,7 @@ Note the letter case and `<` and `&`.
 If you're using the font I've mentioned — Back to the Future 2002 — then letter case is important: UPPERCASED letter are skewed left and lowercased letters are skewed right.
 `<` becomes a left arrow and `&` becomes a `to the`:
 
-{{< figure src="/images/post/back-to-the-inkscape/004.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/004.png" >}}
 
 Now let's use those three polygons as a guides for perspective distortions.
 The plan is to fit "come" into the upper left polygon, left arrow into upper right and "to the jfuture" into the lower polygon.
@@ -84,7 +84,7 @@ TIP: The order of selection is important: "Perspective" extension fits first sel
 Repeat with arrow and second line of text.
 You need to achieve something like this:
 
-{{< figure src="/images/post/back-to-the-inkscape/005.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/005.png" >}}
 
 If for some reason the letters are rotated unpredictably http://www.inkscapeforum.com/viewtopic.php?t=15813[redraw the polygons] starting from the bottom left corner.
 This is easy with node snapping enabled: Bezier tool will "stick" to the existing corners.
@@ -101,7 +101,7 @@ TIP: Click the selection to change between "scale" and "skew and rotate" modes.
 
 TIP: Done is better than perfect.
 
-{{< figure src="/images/post/back-to-the-inkscape/006.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/006.png" >}}
 
 Now will make the glow around the text.
 Move the original picture so that it is not behind your design.
@@ -134,12 +134,12 @@ TIP: To select an object that is below another one hold kbd:[`Alt`] while clicki
 
 If you see this, you're on the right path:
 
-{{< figure src="/images/post/back-to-the-inkscape/007.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/007.png" >}}
 
 Now select the duplicates with strokes and cast a blur on them with "Filters" → "Blurs" → "Blur…".
 Play with the parameters until it looks like you want, 0.2 worked for me:
 
-{{< figure src="/images/post/back-to-the-inkscape/008.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/008.png" >}}
 
 We're almost done, just need to add a gradient.
 Select original (black) "come" and arrow, group (kbd:[`Ctrl` + `G`]) them together.
@@ -151,7 +151,7 @@ Polishing: increase spacing between top and bottom lines, re-group objects logic
 
 Final result:
 
-{{< figure src="/images/post/back-to-the-inkscape/009.png" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/009.png" >}}
 
 Thanks for reading to the end!
 
