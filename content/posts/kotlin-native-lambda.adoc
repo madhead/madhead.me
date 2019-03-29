@@ -1,0 +1,43 @@
+---
+title: Kotlin/Native for AWS Lambda
+date: 2019-03-25T02:27:00+03:00
+tags:
+  - kotlin
+  - kotlin/native
+  - aws
+  - aws lambda
+  - pet projects
+  - linux
+---
+
+Amazon https://aws.amazon.com/about-aws/whats-new/2018/11/aws-lambda-now-supports-custom-runtimes-and-layers[announced] Lambda Runtime API on AWS https://reinvent.awsevents.com[re:Invent] 2018.
+It allows developers, among other things, to build AWS Lambdas using any technology they want via so called https://docs.aws.amazon.com/lambda/latest/dg/runtimes-custom.html[Custom Runtimes].
+Yes, it's now possible to author Lambdas on PHP, Perl, Pascal (anybody?) or even Bash (they use it in the https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html[docs])!
+
+I love Kotlin and https://kotlinlang.org/docs/reference/native-overview.html[look] what it has:
+
+[quote]
+Kotlin/Native is a technology for compiling Kotlin code to native binaries, which can run without a virtual machine.
+It is an LLVM based backend for the Kotlin compiler and native implementation of the Kotlin standard library.
+
+Nice, isn't it?
+Let's build a Lambda on Kotlin/Native!
+
+<!--more-->
+
+But first, let's figure out what should be done.
+How do runtimes work?
+
+A runtime's job is to:
+
+ - Execute the function's initialization logic.
+In case of Java it means starting the JVM, loading the classes and running static initializers.
+ - Locate the handler passed through the "Handler" configuration parameter.
+For https://docs.aws.amazon.com/lambda/latest/dg/java-programming-model-handler-types.html[Java-based Lambdas] it's either a FCDN of a class, like `some.package.Handler`, or a reference to a method, like `some.package.Handler::method`.
+ - Execute the handler for each incoming event.
+
+Here is a picture to help you grasp Lambda's runtime lifecycle:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-lambda/001.png" >}}
+
+Basically, when you author a Lambda using one of the supported runtimes, like Java, Nodejs or Go, you are dealing only with the central part: event processing loop.
