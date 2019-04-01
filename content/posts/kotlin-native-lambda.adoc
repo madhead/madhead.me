@@ -11,8 +11,8 @@ tags:
 ---
 
 Amazon https://aws.amazon.com/about-aws/whats-new/2018/11/aws-lambda-now-supports-custom-runtimes-and-layers[announced] Lambda Runtime API on AWS https://reinvent.awsevents.com[re:Invent] 2018.
-It allows developers, among other things, to build AWS Lambdas using any technology they want via so called https://docs.aws.amazon.com/lambda/latest/dg/runtimes-custom.html[Custom Runtimes].
-Yes, it's now possible to author Lambdas on PHP, Perl, Pascal (anybody?) or even Bash (they use it in the https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html[docs])!
+It allows developers, among other things, to build Lambda functions using any technology they want via so called https://docs.aws.amazon.com/lambda/latest/dg/runtimes-custom.html[Custom Runtimes].
+Yes, it's now possible to author a function on PHP, Perl, Pascal (anybody?) or even Bash (they use it in the https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html[docs])!
 
 I love Kotlin and https://kotlinlang.org/docs/reference/native-overview.html[look] what it has:
 
@@ -21,7 +21,7 @@ Kotlin/Native is a technology for compiling Kotlin code to native binaries, whic
 It is an LLVM based backend for the Kotlin compiler and native implementation of the Kotlin standard library.
 
 Nice, isn't it?
-Let's build a Lambda on Kotlin/Native!
+Let's build an AWS Lambda function on Kotlin/Native!
 
 <!--more-->
 
@@ -36,8 +36,53 @@ In case of Java it means starting the JVM, loading the classes and running stati
 For https://docs.aws.amazon.com/lambda/latest/dg/java-programming-model-handler-types.html[Java-based Lambdas] it's either a FCDN of a class, like `some.package.Handler`, or a reference to a method, like `some.package.Handler::method`.
  - Execute the handler for each incoming event.
 
-Here is a picture to help you grasp Lambda's runtime lifecycle:
+Here is a picture to help you grasp a function's lifecycle:
 
 {{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-lambda/001.png" >}}
 
-Basically, when you author a Lambda using one of the supported runtimes, like Java, Nodejs or Go, you are dealing only with the central part: event processing loop.
+Basically, when you author a Lambda function using one of the supported runtimes, like Java, Nodejs or Go, you are concentrated on the event processing loop in the center.
+The runtime handles the initialization and passes the events directly to your handler in the form of objects or structs (the naming depends on the programming language).
+
+In the case of a custom runtime it's all your job.
+
+A custom runtime is just an executable file named `bootstrap` in your function's deployment package that is used as an entry point.
+The file can be included in your the deployment package directly, or in a https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html[layer].
+AWS Lambda executes it with the configuration passed via environment variables.
+The `bootstrap` should initialize the required resources and enter the event processing loop.
+AWS Lambda provides an https://docs.aws.amazon.com/lambda/latest/dg/runtimes-api.html[HTTP API] for custom runtimes to receive the events and send the responses back.
+Your custom runtime should call this API in a loop and obtain the event from the responses.
+For each event it could either invoke a handler, or processes it on it's own.
+
+Take another picture visualizaing the process:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-lambda/002.png" >}}
+
+Of, if you prefer code, take a look at this Bash-based Lambda function that responds with an https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format[Amazon API Gateway Proxy Integration response] that sends HTTP redirects for all the requests.
+
+.bootstrap
+[source,bash]
+----
+#!/bin/sh
+
+set -euo pipefail
+
+while true
+do
+    HEADERS="$(mktemp)" # <1>
+
+    EVENT_DATA=$(curl  -v -sS  -LD "$HEADERS"  -X GET  "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/next") # <2>
+
+    INVOCATION_ID=$(grep -Fi Lambda-Runtime-Aws-Request-Id "$HEADERS" | tr -d '[:space:]' | cut -d: -f2) # <3>
+
+    echo $EVENT_DATA # <4>
+
+    curl  -v  -sS  -X POST  "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/$INVOCATION_ID/response" -H "Content-Type: application/json" -d '{"statusCode": 307, "headers": {"Location": "https://madhead.me"}}' # <5>
+done
+----
+<1> Create a file to capture the headers
+<2> Dump the headers in a remporary file
+<3> Parse the headers to find the request id
+<4> Log the event
+<5> Respond to the event using the request id
+
+There is no initialization here and there is no external handler: the events are processed right in `bootstrap` shell script.
