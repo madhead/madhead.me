@@ -1,0 +1,298 @@
+---
+title: Kotlin/Native for AWS Lambda
+date: 2019-04-05T22:02:00+03:00
+tags:
+  - kotlin
+  - kotlin/native
+  - aws
+  - aws lambda
+  - gradle
+  - pet projects
+  - linux
+---
+
+Amazon https://aws.amazon.com/about-aws/whats-new/2018/11/aws-lambda-now-supports-custom-runtimes-and-layers[announced] Lambda Runtime API on AWS https://reinvent.awsevents.com[re:Invent] 2018.
+It allows developers, among other things, to build Lambda functions using any technology they want via so-called https://docs.aws.amazon.com/lambda/latest/dg/runtimes-custom.html[Custom Runtimes].
+Yes, it's now possible to author a function on PHP, Perl, Pascal (anybody?) or even Bash (they use it in the https://docs.aws.amazon.com/lambda/latest/dg/runtimes-walkthrough.html[docs])!
+
+Nice, isn't it?
+Let's build an AWS Lambda function with https://kotlinlang.org/docs/reference/native-overview.html[Kotlin/Native]!
+
+<!--more-->
+
+But first, let's figure out what should be done.
+How do runtimes work?
+
+A runtime's job is to:
+
+ - Execute the function's initialization logic.
+In the case of Java, it means starting the JVM, loading the classes and running static initializers.
+ - Locate the handler passed through the "Handler" configuration parameter.
+For https://docs.aws.amazon.com/lambda/latest/dg/java-programming-model-handler-types.html[Java-based Lambdas], it's either an FCDN of a class, like `some.package.Handler`, or a reference to a method, like `some.package.Handler::method`.
+ - Execute the handler for each incoming event.
+
+Here is a picture to help you grasp a function's lifecycle:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-lambda/001.png" >}}
+
+Basically, when you author a Lambda function using one of the supported runtimes, like Java, Nodejs or Go, you are concentrated on the event processing loop in the center.
+The runtime handles the initialization and passes the events directly to your handler in the form of objects or structs (the naming depends on the programming language).
+
+In the case of a custom runtime, it's all your job.
+
+A custom runtime is just an executable file named `bootstrap` in your function's deployment package that is used as an entry point.
+The file can be included in your the deployment package directly, or in a https://docs.aws.amazon.com/lambda/latest/dg/configuration-layers.html[layer].
+AWS Lambda executes it with the configuration passed via environment variables.
+The `bootstrap` should initialize the required resources and enter the event processing loop.
+AWS Lambda provides an https://docs.aws.amazon.com/lambda/latest/dg/runtimes-api.html[HTTP API] for custom runtimes to receive the events and send the responses back.
+Your custom runtime should call this API in a loop and fetch the events.
+For each event, it could either invoke a handler or processes it on its own.
+
+Let's take a look at this Bash-based Lambda function that responds with an https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format[Amazon API Gateway Proxy Integration response] that sends HTTP redirects to this blog for all the requests.
+
+.bootstrap
+[source,bash]
+----
+#!/bin/sh
+
+set -euo pipefail
+
+while true
+do
+    HEADERS="$(mktemp)" # <1>
+
+    EVENT_DATA=$(curl -v -sS -LD "$HEADERS" -X GET "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/next") # <2>
+
+    INVOCATION_ID=$(grep -Fi Lambda-Runtime-Aws-Request-Id "$HEADERS" | tr -d '[:space:]' | cut -d: -f2) # <3>
+
+    echo $EVENT_DATA # <4>
+
+    curl -v -sS -X POST "http://${AWS_LAMBDA_RUNTIME_API}/2018-06-01/runtime/invocation/$INVOCATION_ID/response" -H "Content-Type: application/json" -d '{"statusCode": 307, "headers": {"Location": "https://madhead.me"}}' # <5>
+done
+----
+<1> Create a file to capture the headers.
+<2> Receive next event and dump it's headers to a temporary file created on the previous line.
+<3> Parse the headers to find the request id.
+<4> Log the event to `STDOUT`.
+<5> Respond to the event using the request id.
+
+There is no initialization or clean-up here and there is no external handler: it's a very basic function and the events are processed right in `bootstrap` script.
+Note the `while true` loop that polls for events: once this function is started by AWS Lambda it will stay alive and process the requests until Lambda decides to recycle it.
+Also note the way how the function interacts with the AWS Lambda: by calling HTTP API with `curl`.
+
+Now, when you know the basics of custom runtimes, let's implement echo Lambda function in Kotlin/Native.
+
+First, set up the project.
+Latest IntelliJ IDEA supports Kotlin/Native… natively, so it can be done with "File" → "New" → "Project…" → "Kotlin" → "Kotlin/Native":
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-lambda/002.png" >}}
+
+IDEA will create a Gradle project with Kotlin Multiplatform plugin and native target.
+
+Let's add two dependencies: https://ktor.io[Ktor] and https://github.com/Kotlin/kotlinx.serialization[kotlinx.serialization].
+We'll use first as an HTTP client and the latter for JSON encoding.
+
+In order for Kotlin/Native dependencies to work properly in Gradle, you need to enable `GRADLE_METADATA` feature.
+Furthermore, kotlinx.serialization's plugin is not published on https://plugins.gradle.org[Gradle Plugin Portal] (yet), so let's use some https://docs.gradle.org/current/userguide/plugins.html#sec:plugin_resolution_rules[black magic] to tell it how to find the plugin.
+Both tweaks should go to the `settings.gradle.kts`, so here is it:
+
+.settings.gradle.kts
+[source, kotlin]
+----
+import org.gradle.api.internal.FeaturePreviews
+
+rootProject.name = "kotlin-native-lambda"
+
+enableFeaturePreview(FeaturePreviews.Feature.GRADLE_METADATA.name)
+
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        add(jcenter())
+    }
+
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == "kotlinx-serialization") {
+                useModule("org.jetbrains.kotlin:kotlin-serialization:${requested.version}")
+            }
+        }
+    }
+}
+----
+
+Now Gradle "knows" `kotlinx-serialization` plugin and we can go and configure the build:
+
+.build.gradle.kts
+[source, kotlin]
+----
+plugins { 
+    kotlin("multiplatform").version("1.3.21")
+    id("kotlinx-serialization").version("1.3.21") // <1>
+}
+
+repositories {
+    jcenter()
+    maven("https://kotlin.bintray.com/kotlinx") // <2>
+}
+
+kotlin { // <3>
+    linuxX64("bootstrap") { // <4>
+        binaries {
+            executable("bootstrap") { // <5>
+                entryPoint = "by.dev.madhead.kotlin_native_lambda.main" // <6>
+            }
+        }
+    }
+}
+
+dependencies {
+    val bootstrapMainImplementation by configurations // <7>
+
+    bootstrapMainImplementation("io.ktor:ktor-client-curl-linuxx64:1.1.3") // <8>
+    bootstrapMainImplementation("io.ktor:ktor-client-json-linuxx64:1.1.3") // <8>
+}
+
+tasks {
+    wrapper {
+        gradleVersion = "5.3"
+        distributionType = Wrapper.DistributionType.ALL
+    }
+}
+----
+<1> Use `org.jetbrains.kotlin:kotlin-serialization:1.3.21` as Gradle plugin.
+The resolution rule comes from `pluginManagement.resolutionStrategy` in `settings.gradle.kts` configured previously.
+One day, the plugin https://github.com/Kotlin/kotlinx.serialization/issues/256[will be published officially] and these lines could be removed.
+I recommend https://guides.gradle.org/migrating-build-logic-from-groovy-to-kotlin/#configuring-plugins[applying plugins via `plugins` block versus `apply`] so that Kotlin extension functions are made available to configure them.
+<2> kotlinx.serialization is not published in JCenter (yet), so we need that additional repository.
+<3> Kotlin Multiplatform Project configuration block.
+<4> We configure single Linux x64 binary as it is the platform https://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html[used] by AWS Lambda.
+Other https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#supported-platforms[supported platforms] include Android ARM, iOS ARM and x64, other Linux variants, Windows, Mac OS and Web Assembly.
+<5> As long as we're building an https://en.wikipedia.org/wiki/Executable_and_Linkable_Format[executable file], we need to say that to Gradle.
+https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#building-final-native-binaries[Other options] are dynamic and static libraries and Objective-C frameworks.
+<6> As with good old Gradle's `application` plugin, we need to specify the entry point.
+<7> Just https://guides.gradle.org/migrating-build-logic-from-groovy-to-kotlin/#configurations-and-dependencies[a trick] to tell Gradle about the existing configuration and avoid using string literals within the `dependencies` block.
+<8> Finally, the libraries we need: Ktor HTTP client based on cURL and Ktor JSON facilities.
+
+Almost done.
+We'll be using two data classes to model https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-input-format[input] and https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html#api-gateway-simple-proxy-for-lambda-output-format[output] of a Lambda function for AWS Lambda Proxy Integration:
+
+.ProxyIntegrationRequest
+[source, kotlin]
+----
+@kotlinx.serialization.Serializable
+data class ProxyIntegrationRequest(
+        val resource: String,
+        val path: String,
+        val httpMethod: String,
+        val headers: Map<String, String>?,
+        val multiValueHeaders: Map<String, List<String>>?,
+        val queryStringParameters: Map<String, String>?,
+        val multiValueQueryStringParameters: Map<String, List<String>>?,
+        val pathParameters: Map<String, String>?,
+        val stageVariables: Map<String, String>?,
+        val body: String?,
+        val isBase64Encoded: Boolean?
+)
+----
+
+.ProxyIntegrationResponse
+[source, kotlin]
+----
+@kotlinx.serialization.Serializable
+data class ProxyIntegrationResponse(
+        val isBase64Encoded: Boolean = false,
+        val statusCode: Int,
+        val headers: Map<String, String>? = null,
+        val multiValueHeaders: Map<String, List<String>>? = null,
+        val body: String? = null
+)
+----
+
+Finally, the bootstrap's code:
+
+.main.kt
+[source, kotlin]
+----
+fun main() = runBlocking { // <1>
+    val client = HttpClient(Curl) // <2>
+
+    while (true) { // <3>
+        val invocation = client.call("http://${getenv("AWS_LAMBDA_RUNTIME_API")!!.toKString()}/2018-06-01/runtime/invocation/next") {
+            method = HttpMethod.Get
+        } // <4>
+
+        // <5>
+        val invocationId = invocation.response.headers["Lambda-Runtime-Aws-Request-Id"]
+        val payload = invocation.response.content.readRemaining().readText(Charsets.UTF_8)
+        val proxyIntegrationRequest =
+                try {
+                    Json.nonstrict.parse(ProxyIntegrationRequest.serializer(), payload)
+                } catch (e: Exception) {
+                    // <6>
+                }
+
+        println(proxyIntegrationRequest) // <7>
+
+        // <8>
+        client.call("http://${getenv("AWS_LAMBDA_RUNTIME_API")!!.toKString()}/2018-06-01/runtime/invocation/$invocationId/response") {
+            method = HttpMethod.Post
+            body = TextContent(
+                    Json.nonstrict.stringify(
+                            ProxyIntegrationResponse.serializer(),
+                            ProxyIntegrationResponse(
+                                    statusCode = 200,
+                                    headers = mapOf(
+                                            "Content-Type" to "text/plain"
+                                    ),
+                                    body = proxyIntegrationRequest.toString()
+                            )
+                    ),
+                    ContentType.Application.Json
+            )
+        }
+    }
+}
+----
+<1> As long as we'll be using coroutines thanks to Ktor, we need a coroutine scope.
+The simplest way to acquire one is `runBlocking`.
+<2> Configure the HTTP client https://ktor.io/clients/http-client/engines.html#curl[using the `Curl` engine].
+This is the initialization phase from the picture at the beginning of this post.
+<3> Enter the event loop.
+<4> Fetch next event to process.
+<5> Parse the event.
+Feel's better than `grep`, isn't it?
+<6> Never swallow exceptions like that.
+<7> Log the request.
+Function's `STDOUT` is redirected to AWS CloudWatch where you'll be able to find the logs.
+<8> Echo the request to the response.
+
+That's it!
+
+Take a look at https://gitlab.com/madhead/kotlin-native-lambda[the full source] on my GitLab.
+It even has a CI/CD configuration where you can see how to https://gitlab.com/madhead/kotlin-native-lambda/blob/master/gitlab/gitlab-ci.yml#L6[build], https://gitlab.com/madhead/kotlin-native-lambda/blob/master/gitlab/gitlab-ci.yml#L24[pack] and https://gitlab.com/madhead/kotlin-native-lambda/blob/master/gitlab/gitlab-ci.yml#L34[deploy] functions with custom runtimes!
+
+Questions?
+Ask in comments below!
+
+But I'll probably answer one right now.
+The performance.
+Is it worth it or not?
+
+I https://gitlab.com/madhead/naive-lambda-benchmark[have tested] multiple different runtimes in a simple task of sending HTTP redirects (just like a Bash function above).
+Take a look at the results:
+
+++++
+<iframe src="https://docs.google.com/spreadsheets/d/e/2PACX-1vTsyPILGIYuWs9DJ3zeo7toBzNMbKAxqxMzOXE9uXav55f4NC2OhFu43SlvmC7ndsaV7jsfWfBthCO5/pubhtml?widget=true&amp;headers=false" width="100%" height="600"></iframe>
+++++
+
+I know it's a mess but the results are:
+
+ . Kotlin/Native and Bash are not very performant.
+It's still better that cold-started JVM functions, though (who literally sucks).
+ . Golang is probably the best choice for Lambda functions as it provides the fastest cold starts and the best performance in general.
+ . Pre-warmed JVM functions perform very well (close to Golang).
+ . Script languages provide good cold start times but pre-warmed scripted functions concede to Golang and JVM.
+
+Thanks for reading to the end!
+Have `fun` with Kotlin!
