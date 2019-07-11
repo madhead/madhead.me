@@ -1,0 +1,50 @@
+---
+title: Keeping Gradle up-to-date
+date: 2019-07-11T17:02:00+03:00
+tags:
+  - gradle
+  - ci
+---
+
+https://gradle.org[Gradle] is an awesome build tool, and I am always looking forward to new versions to enjoy the latest features, performance improvements and bug fixes.
+Actually, forget what I've said about bugfixes: Gradle works like a charm.
+
+I could just check http://services.gradle.org/distributions[Gradle's distributions] page periodically, or https://help.github.com/en/articles/watching-and-unwatching-releases-for-a-repository[subscribe] to their https://github.com/gradle/gradle/releases[releases] on GitHub to get notified about new versions faster.
+And I actually do that from time to time when I need to know the latest available version.
+But how can I keep Gradle up-to-date in the existing codebases?
+
+<!--more-->
+
+I suppose, the easiest solution that does not involve using third-party services like https://snyk.io[Snyk] (BTW, I am not sure they can track version of the build tool) is to automate the check in your CI pipeline.
+Here is an example for https://docs.gitlab.com/ee/ci[GitLab]:
+
+[source,yml]
+----
+gradle-version:
+  stage: Test # <1>
+  image: openjdk:12 # <2>
+  dependencies: [] # <3>
+  script:
+    - gradle_version=$(./gradlew --version | sed -rn 's/^Gradle (.+)$/\1/p') # <4>
+    - latest_gradle_version=$(curl https://services.gradle.org/versions/current | python2 -c 'import json,sys;print json.load(sys.stdin)["version"]') # <5>
+    - echo $gradle_version
+    - echo $latest_gradle_version # <6>
+    - '[[ $gradle_version == $latest_gradle_version ]]' # <7>
+  allow_failure: true # <8>
+----
+<1> Defines a job named `gradle-version` to be run during `Test` stage.
+<2> Specifies Docker image to be used for this job.
+<3> Disables artifact passing (it's just another way to say "speeds up the build and saves some money").
+<4> Parses `./gradlew --version` output and extracts Gradle's version, like `5.5.1`.
+<5> Parses https://services.gradle.org/versions/current[the latest published Gradle's version].
+https://stedolan.github.io/jq[jq] could be used for that, but it's not available in the image unlike Python 2.
+<6> I believe that println is one of the best ways to debug.
+<7> https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Bash-Conditional-Expressions[Compares] the versions.
+Quotes are needed for YML to be valid.
+<8> Allows the check above to https://docs.gitlab.com/ee/ci/yaml/#allow_failure[fail without failing the whole build].
+
+That's it!
+This way I'm automatically checking Gradle's version on every build and see a warning when the version is not equal to the latest published stable release.
+
+Thanks for reading to the end.
+May you builds be green!
