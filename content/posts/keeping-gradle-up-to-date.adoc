@@ -1,6 +1,6 @@
 ---
 title: Keeping Gradle up-to-date
-date: 2019-07-11T17:02:00+03:00
+date: 2019-07-16T09:00:00+03:00
 tags:
   - gradle
   - ci
