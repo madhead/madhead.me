@@ -90,7 +90,7 @@ Latest IntelliJ IDEA supports Kotlin/Native… natively, so it can be done with 
 IDEA will create a Gradle project with Kotlin Multiplatform plugin and native target.
 
 Let's add two dependencies: https://ktor.io[Ktor] and https://github.com/Kotlin/kotlinx.serialization[kotlinx.serialization].
-We'll use first as an HTTP client and the latter for JSON encoding.
+We'll use first as an HTTP client and second for JSON encoding.
 
 In order for Kotlin/Native dependencies to work properly in Gradle, you need to enable `GRADLE_METADATA` feature.
 Furthermore, kotlinx.serialization's plugin is not published on https://plugins.gradle.org[Gradle Plugin Portal] (yet), so let's use some https://docs.gradle.org/current/userguide/plugins.html#sec:plugin_resolution_rules[black magic] to tell it how to find the plugin.

@@ -15,7 +15,7 @@ So, is it really required?
 I'd say: it's mostly useless to have a local `master` branch in Git.
 I've googled and found https://medium.com/@AlecBenzer/dont-checkout-master-locally-f5eabe1a98f0[this article] by Alec Benzer and totally agree with what he said, but let me put it my own post.
 
-Most probably your Git workflow forbids any pushes in the `master` branch on the server: it is either updated by pull requests or by a team members with special access permissions ("gatekeeepers").
+Most probably your Git workflow forbids any pushes in the `master` branch on the server: it is either updated by pull requests or by a team member with special access permissions ("gatekeepers").
 So, you rarely push your local `master` to its remote counterpart.
 Moreover, you'll need to keep it in sync with the remote `master` or it will become stale.
 Extra work with no profit!
@@ -54,4 +54,4 @@ You'll appear in a detached `HEAD` state and won't be able to commit.
 Some tools like https://github.com/researchgate/gradle-release[`gradle-release` plugin] won't work, but, hey!, do you really want to release from a local checkout?
 
 Thanks for reading to the end.
-May you merges be conflictless!
+May your merges be conflictless!
