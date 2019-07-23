@@ -1,0 +1,57 @@
+---
+title: Do you need a local master branch?
+date: 2019-07-23T09:00:00+03:00
+tags:
+  - git
+---
+
+I noticed recently that I've (almost) never used a local `master` branch in Git.
+I only use it in simple one-off playground repos that I don't plan to support and never in professional development or in "serious" pet-projects.
+
+So, is it really required?
+
+<!--more-->
+
+I'd say: it's mostly useless to have a local `master` branch in Git.
+I've googled and found https://medium.com/@AlecBenzer/dont-checkout-master-locally-f5eabe1a98f0[this article] by Alec Benzer and totally agree with what he said, but let me put it my own post.
+
+Most probably your Git workflow forbids any pushes in the `master` branch on the server: it is either updated by pull requests or by a team member with special access permissions ("gatekeepers").
+So, you rarely push your local `master` to its remote counterpart.
+Moreover, you'll need to keep it in sync with the remote `master` or it will become stale.
+Extra work with no profit!
+
+Every time you need a `master` use `origin/master` (assuming your remote is `origin`), just don't forget to `fetch` the latest remote state.
+
+E.g. starting a new branch from master:
+
+[source, bash]
+----
+git checkout -b branch origin/master
+----
+
+Checking the difference between any branch and the latest `master`:
+
+[source, bash]
+----
+git diff origin/master branch
+----
+
+Rebasing you branch on the latest `master`:
+
+[source, bash]
+----
+git rebase origin/master branch
+----
+
+You can even checkout to the latest master without really checking out any branch:
+
+[source, bash]
+----
+git checkout origin/master
+----
+
+You'll appear in a detached `HEAD` state and won't be able to commit.
+Some tools like https://github.com/researchgate/gradle-release[`gradle-release` plugin] won't work, but, hey!, do you really want to release from a local checkout?
+
+Thanks for reading to the end.
+May your merges be conflictless!
