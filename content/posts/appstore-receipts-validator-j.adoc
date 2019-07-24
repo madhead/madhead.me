@@ -9,14 +9,14 @@ tags:
   - pet projects
 ---
 
-I'm working on a bunch of apps that need to verify AppStore receipts on a JVM-based server.
-The process https://developer.apple.com/library/archive/releasenotes/General/ValidateAppStoreReceipt/Chapters/ValidateRemotely.html#//apple_ref/doc/uid/TP40010573-CH104-SW1[is described in Apples's Documentation Archive] but lacks of any SDK / libraries.
+I'm working on a bunch of apps that need to verify App Store receipts on a JVM-based server.
+The process https://developer.apple.com/documentation/appstorereceipts[is described in Apples's Documentation Archive] but lacks of any SDK / libraries (at least for JVM).
 So I made one to improve code reuse.
 
 <!--more-->
 
 I assume Jackson is the most popular and widely used JSON library in the JVM world, so the library depends on it for field mappings.
-Guava is used for `equals` / `hashCode` / `toString` and that's it.
+There are no other dependencies.
 The library is https://bintray.com/bintray/jcenter?filterByPkgName=by.dev.madhead.utils.appstore_receipts_validator%3Amodel[published to JCenter] and requires only one line in your Gradle build (assuming you're already using `jcenter()` repo):
 
 [source,kotlin]
@@ -26,6 +26,26 @@ repositories {
 }
 
 dependencies {
-  implementation("by.dev.madhead.utils.appstore_receipts_validator:model:1.1.0")
+  implementation("by.dev.madhead.utils.appstore_receipts_validator:model:2.0.0")
 }
 ----
+
+The usage is straightforward (here I use https://ktor.io/clients/http-client.html[Ktor HTTP] client as an example):
+
+[source, kotlin]
+----
+suspend fun verify(receipt: String, password: String): VerifyReceiptResponse {
+    return client.post<VerifyReceiptResponse> {
+        url("https://buy.itunes.apple.com/verifyReceipt")
+        contentType(ContentType.Application.Json)
+        accept(ContentType.Application.Json)
+        body = VerifyReceiptRequest(
+                receipt,
+                password,
+                true
+        )
+    }
+}
+----
+
+Now you can count your money using a Java API (I've heard Java is good for that)!
