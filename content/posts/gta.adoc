@@ -1,0 +1,39 @@
+---
+title: GTA
+date: 2019-03-17T18:42:00+03:00
+tags:
+  - diy
+  - 3d printing
+---
+
+<!--more-->
+
+++++
+<script src="https://embed.github.com/view/3d/madhead/gta/master/cad/v1.stl"></script>
+++++
+("Surface Angle" provides best visual experience)
+
+Фрейм:
+
+ 2 × 100 мм
+ 2 × 300 мм
+
+Верхняя центральная
+ 
+1 × 208
+
+Верхняя горизонтальная
+
+1 × 262
+
+Верхняя выноска
+
+1 × 365
+
+Верхняя выноска
+
+1 × 269
+
+Штанга
+
+1 × 500
