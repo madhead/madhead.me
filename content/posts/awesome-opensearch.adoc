@@ -1,0 +1,58 @@
+---
+title: OpenSearch
+date: 2019-08-20T09:00:00+03:00
+tags:
+  - opensearch
+  - lifehack
+---
+
+:experimental:
+
+I search online every day. I search on Google, StackOverflow, GitHub, Maven Central, Gradle Plugins repository, Youtube and dozen of other sites.
+And, I won't deny, sometimes I search on Pornhub.
+
+I bet you search too.
+
+<!--more-->
+
+If you are a lucky Google Chrome (and, probably, Chromium) user you may noticed that it detects search inputs and forms on the sites you visit once you have searched them.
+It looks like this:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/awesome-opensearch/001.png" >}}
+
+When you start typing the site you've used to search before Chrome offers you to search it again quickly by pressing kbd:[Tab].
+If you do so, Chrome will use a site specific search URL that it detected earlier and bypass your browser's search engine.
+It's very convenient and saves some time.
+
+However, a few monthes ago I've switched to the Firefox and it is not that smart.
+Firefox does not detect search forms on sites, it only supports https://developer.mozilla.org/en-US/docs/Web/OpenSearch[OpenSearch descriptors].
+Sites can advertise OpenSearch descriptors via HTML `link` tags to Firefox so users can install new search engines easily.
+
+That's it: you have to do it manually in Firefox.
+
+Many sites actually have those descriptors.
+Kudos to them:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/awesome-opensearch/002.png" >}}
+
+But not all:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/awesome-opensearch/003.png" >}}
+
+WTF, Pornhub?
+
+There is an online https://ready.to/search/en[OpenSearch XML generator] and it works great but has a flaw: generated OpenSearch descriptors are available only to those who generated them.
+I.e. if you have generated an OpenSearch descriptor for, let's say, https://npmjs.org[npmjs.org] (yeah, the don't have it), it is installed only in your browser.
+Moreover, https://bugzilla.mozilla.org/show_bug.cgi?id=444284[Firefox sync does not sync search engines] across your devices, so you'll have to repeat it for every site you want to search on every device you use.
+
+I decided to put my OpenSearch descriptors on GitHub: https://github.com/madhead/awesome-opensearch[madhead/awesome-opensearch] (actually a mirror of https://gitlab.com/madhead/awesome-opensearch[the GitLab repo]):
+
+- It's a perfect application of https://en.wikipedia.org/wiki/Don%27t_repeat_yourself[DRY principle]: once I've created a descriptor it's a matter of a few clicks to add it to any browser at any time.
+- Sharing is caring.
+Anyone can reuse any descriptor with the same few clicks!
+
+https://github.com/madhead/awesome-opensearch#the-list[The list] of available descriptors is short, but I hope to support more sites with the help of your https://github.com/madhead/awesome-opensearch/pull/new/master[pull requests].
+If you don’t want to bother with OpenSearch descriptors, Git, Pull Request and all that stuff but still want to have a search plugin — don’t hesitate to propose a site by https://github.com/madhead/awesome-opensearch/issues/new[submitting an issue].
+Or mailto:siarhei.krukau@gmail.com[drop] me a https://t.me/xXmadheadXx[message] if you don't have a GitLab / GitHub account.
+
+Thak you for staying to the end and I wish you the very best of luck in every your search!
