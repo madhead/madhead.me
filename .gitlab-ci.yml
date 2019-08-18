@@ -19,7 +19,21 @@ hugo:
     paths:
       - public
     expire_in: 1 hour
-deploy:
+
+pages:
+  stage: deploy
+  image: alpine:latest
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - /bin/true
+  artifacts:
+    paths:
+      - public
+  environment:
+    name: staging
+    url: https://madhead.me.gitlab.io/madhead.me
+production:
   stage: deploy
   image: madhead/git:latest
   variables:
