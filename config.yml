@@ -14,6 +14,7 @@ taxonomies:
 preserveTaxonomyNames: true
 
 paginate:         10
+buildFuture:      true
 
 title: madhead
 
