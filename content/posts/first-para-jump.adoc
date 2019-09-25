@@ -280,7 +280,7 @@ tags:
 Затянута она значительно туже, чем тренировочная, сесть так же комфортно, как и в тренировочной я не могу.
 Не без труда достаю камеру из кармана и делаю парочку кадров.
 
-{{< figure src="//storage.googleapis.com/madheadme-static/posts/first-para-jump/011.jpg" >}}
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/first-para-jump/011.png" >}}
 {{< youtube SxxUZNp8I2A >}}
 
 Всё остальное время камера болталась на шнурке и снимала берцы, было не до неё.
