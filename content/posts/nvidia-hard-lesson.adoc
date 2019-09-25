@@ -7,7 +7,7 @@ tags:
 ---
 
 Last week I've managed to accidentally break my Linux installation.
-Probably, the first time for the last ten years where Linux behaved truly "unstable".
+Probably, the first time for the last ten years where Linux behaved truly “unstable”.
 
 <!--more-->
 
@@ -43,9 +43,9 @@ BOOM!
 
 *Screen not found!*
 
-That command totally ruined my X.Org config and, just like a spit in my face, it created an empty "backup" that I was not able to use for repair.
+That command totally ruined my X.Org config and, just like a spit in my face, it created an empty “backup” that I was not able to use for repair.
 
-Then I found https://superuser.com/questions/1325471/x-server-wont-start-after-nvidia-xconfig-command#comment1977019_1325471[this comment] on "Super User" and https://bbs.archlinux.org/viewtopic.php?pid=1737318#p1737318[a lot of threads] https://askubuntu.com/q/235823/171572[across] https://ubuntuforums.org/showthread.php?t=1759810[the Internet] that warn people of using `nvidia-xconfig`.
+Then I found https://superuser.com/questions/1325471/x-server-wont-start-after-nvidia-xconfig-command#comment1977019_1325471[this comment] on “Super User” and https://bbs.archlinux.org/viewtopic.php?pid=1737318#p1737318[a lot of threads] https://askubuntu.com/q/235823/171572[across] https://ubuntuforums.org/showthread.php?t=1759810[the Internet] that warn people of using `nvidia-xconfig`.
 
 I had to do a reinstall.
 

@@ -34,7 +34,7 @@ gradle-version:
 ----
 <1> Defines a job named `gradle-version` to be run during `Test` stage.
 <2> Specifies Docker image to be used for this job.
-<3> Disables artifact passing (it's just another way to say "speeds up the build and saves some money").
+<3> Disables artifact passing (it's just another way to say “speeds up the build and saves some money”).
 <4> Parses `./gradlew --version` output and extracts Gradle's version, like `5.5.1`.
 <5> Parses https://services.gradle.org/versions/current[the latest published Gradle's version].
 https://stedolan.github.io/jq[jq] could be used for that, but it's not available in the image unlike Python 2.
