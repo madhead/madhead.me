@@ -6,7 +6,7 @@ tags:
 ---
 
 I noticed recently that I've (almost) never used a local `master` branch in Git.
-I only use it in simple one-off playground repos that I don't plan to support and never in professional development or in "serious" pet-projects.
+I only use it in simple one-off playground repos that I don't plan to support and never in professional development or in “serious” pet-projects.
 
 So, is it really required?
 
@@ -15,7 +15,7 @@ So, is it really required?
 I'd say: it's mostly useless to have a local `master` branch in Git.
 I've googled and found https://medium.com/@AlecBenzer/dont-checkout-master-locally-f5eabe1a98f0[this article] by Alec Benzer and totally agree with what he said, but let me put it my own post.
 
-Most probably your Git workflow forbids any pushes in the `master` branch on the server: it is either updated by pull requests or by a team member with special access permissions ("gatekeepers").
+Most probably your Git workflow forbids any pushes in the `master` branch on the server: it is either updated by pull requests or by a team member with special access permissions (“gatekeepers”).
 So, you rarely push your local `master` to its remote counterpart.
 Moreover, you'll need to keep it in sync with the remote `master` or it will become stale.
 Extra work with no profit!

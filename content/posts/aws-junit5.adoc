@@ -1,0 +1,118 @@
+---
+title: 'JUnit 5 extensions for AWS'
+date: 2019-09-26T09:00:00+03:00
+tags:
+  - aws
+  - junit
+  - pet projects
+---
+
+Do you test the code that uses AWS services?
+Do you use JUnit 5 in your tests?
+If you do both, I may have something useful for you.
+
+https://gitlab.com/madhead/aws-junit5[JUnit 5 extensions for AWS]: a few JUnit 5 extensions that could be useful for testing AWS-related code.
+These extensions can be used to inject clients for AWS service mocks provided by tools like https://github.com/localstack/localstack[localstack].
+Both AWS Java SDK v 2.x and v 1.x are supported.
+
+<!--more-->
+
+You may know (or you may imagine, if you never tried) that testing code that works with AWS is not easy.
+Just mocking the clients is enough only for simple unit tests, it won't help you detect some service-specific issues like this:
+
+[source, kotlin]
+----
+val kinesis: KinesisClient = …
+    
+kinesis.putRecord { 
+    it.streamName("kinesis-stream")
+    it.data(SdkBytes.fromString("payload", StandardCharsets.UTF_8))
+}
+----
+
+What's wrong with this code?
+If you mock the client, there are basically two outcomes: either it accepts your request or it fails.
+But the real AWS service client will always fail.
+Kinesis requires partition key:
+
+[source, kotlin]
+----
+kinesis.putRecord { 
+    it.streamName("kinesis-stream")
+    it.partitionKey("partition-key") // this line is crucial!
+    it.data(SdkBytes.fromString("payload", StandardCharsets.UTF_8))
+}
+----
+
+This is true for every other AWS services: DynamoDB's `getItem` requires table name and key, S3 requires bucket and key for `putObject` and so on.
+
+Here, at the level of integration testing, come tools like https://github.com/localstack/localstack[localstack], https://min.io[MinIO] or https://aws.amazon.com/about-aws/whats-new/2018/08/use-amazon-dynamodb-local-more-easily-with-the-new-docker-image[DynamoDB Local].
+The idea is to mock an AWS service using a low-cost, disposable (in-memory) implementation and use it to test your code.
+Localstack already supports two dozen of AWS services and the list is growing!
+
+You only have to get the clients in your test classes, and https://gitlab.com/madhead/aws-junit5[`aws-junit5`] will help you do with a minimal effor:
+
+[source, kotlin]
+----
+@ExtendWith(Kinesis::class)
+class SomeTest {
+    @AWSClient(endpoint = Endpoint::class)
+    @AWSAdvancedConfiguration(sdkAsyncHttpClientFactory = HTTPConfiguration::class)
+    private kinesis: KinesisAsyncClient
+
+    @Test
+    fun test() {
+        kinesis.putRecord { 
+            it.streamName("kinesis-stream")
+            it.partitionKey("partition-key")
+            it.data(SdkBytes.fromString("payload", StandardCharsets.UTF_8))
+        }
+    }
+}
+----
+
+Here, `Endpoint` provides some vital values, taking them, for example, from the environment:
+
+[source, kotlin]
+----
+class Endpoint : AWSEndpoint {
+    override fun url() = System.getenv("DYNAMODB_URL")
+
+    override fun region() = System.getenv("DYNAMODB_REGION")
+
+    override fun accessKey() = System.getenv("DYNAMODB_ACCESS_KEY")
+
+    override fun secretKey() = System.getenv("DYNAMODB_SECRET_KEY")
+}
+----
+
+`HTTPConfiguration` is a bit of an optional configuration, needed in specific cases.
+Like configuring HTTP protocol details:
+
+[source, kotlin]
+----
+class HTTPConfiguration : SdkAsyncHttpClientFactory {
+    override fun create() =
+        NettyNioAsyncHttpClient
+            .builder()
+            .protocol(Protocol.HTTP1_1)
+            .buildWithDefaults(
+                AttributeMap
+                    .builder()
+                    .put(SdkHttpConfigurationOption.TRUST_ALL_CERTIFICATES, java.lang.Boolean.TRUE)
+                    .build()
+            )
+}
+----
+
+In most cases only `@AWSClient` with `endpoint` is needed.
+You can use https://gitlab.com/madhead/aws-junit5[`aws-junit5`] to inject clients for DynamoDB, Kinesis, S3, SES, SNS and SQS.
+
+Even if you use real AWS services for testing (i.e. you have a dedicated environment for tests) — you still can use these extensions to get the required clients.
+
+Read more in the https://madhead.gitlab.io/aws-junit5/asciidoc[user guide] and https://madhead.gitlab.io/aws-junit5/javadoc[Javadocs].
+Submit https://gitlab.com/madhead/aws-junit5/issues/new[an issue] in case of any questions, problems, proposals or requests.
+
+And…
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/aws-junit5/001.png" class="align-center" >}}

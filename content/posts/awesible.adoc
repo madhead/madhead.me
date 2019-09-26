@@ -19,14 +19,14 @@ However, in GitLab you could group jobs in stages, while in Bitbucket there seem
 So, if your deployment logically consists of multiple different actions, like deploying https://aws.amazon.com/lambda[Lambdas] with https://aws.amazon.com/cli[AWS CLI] and running https://www.ansible.com[Ansible] plays for EC2 instances, you're out of luck in Bitbucket: you need two steps — one with AWS CLI and another with Ansible.
 Sucking deeper: if you want to use https://confluence.atlassian.com/bitbucket/bitbucket-deployments-940695276.html[deployments feature] (you, generally, want) you cannot have multiple steps with the same `deployment` key.
 
-Usually, enterprises tend to build "The Image" that holds everything they need to build the project and use it across all steps, so all the tools are available at every single step.
+Usually, enterprises tend to build “The Image” that holds everything they need to build the project and use it across all steps, so all the tools are available at every single step.
 We did that as well.
 The image was like 2 gigs and it just suck.
 
 I believe in https://en.wikipedia.org/wiki/Unix_philosophy#Do_One_Thing_and_Do_It_Well[DOTADIW / Unix way] and I think we should reuse community images where possible.
 For example, there are awesome https://hub.docker.com/_/openjdk/[OpenJDK builds] available for free @ Docker Hub, why not use them for Java build steps?
 
-That way, we thrown away our "The Image" and seen a great improvement in build times due to better image caching and container startup times.
+That way, we thrown away our “The Image” and seen a great improvement in build times due to better image caching and container startup times.
 The problem is that we cannot deploy anything due to the problem I've stated above.
 I've googled for AWS CLI + Ansible images on the Net, but they all were either abandoned, or used Ubuntu.
 

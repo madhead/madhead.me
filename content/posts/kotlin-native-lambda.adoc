@@ -27,7 +27,7 @@ A runtime's job is to:
 
  - Execute the function's initialization logic.
 In the case of Java, it means starting the JVM, loading the classes and running static initializers.
- - Locate the handler passed through the "Handler" configuration parameter.
+ - Locate the handler passed through the “Handler” configuration parameter.
 For https://docs.aws.amazon.com/lambda/latest/dg/java-programming-model-handler-types.html[Java-based Lambdas], it's either an FCDN of a class, like `some.package.Handler`, or a reference to a method, like `some.package.Handler::method`.
  - Execute the handler for each incoming event.
 
@@ -83,7 +83,7 @@ Also note the way how the function interacts with the AWS Lambda: by calling HTT
 Now, when you know the basics of custom runtimes, let's implement echo Lambda function in Kotlin/Native.
 
 First, set up the project.
-Latest IntelliJ IDEA supports Kotlin/Native… natively, so it can be done with "File" → "New" → "Project…" → "Kotlin" → "Kotlin/Native":
+Latest IntelliJ IDEA supports Kotlin/Native… natively, so it can be done with “File” → “New” → “Project…” → “Kotlin” → “Kotlin/Native”:
 
 {{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-lambda/002.png" >}}
 
@@ -121,7 +121,7 @@ pluginManagement {
 }
 ----
 
-Now Gradle "knows" `kotlinx-serialization` plugin and we can go and configure the build:
+Now Gradle “knows” `kotlinx-serialization` plugin and we can go and configure the build:
 
 .build.gradle.kts
 [source, kotlin]

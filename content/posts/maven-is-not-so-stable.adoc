@@ -8,7 +8,7 @@ tags:
 
 Sometimes I'm trying to show others that there is a better alternative to Maven: Gradle.
 I'm trying to show them how Gradle can make things easy & possible whereas achieving the same results in Maven are Herculean labors or literally impossible.
-I often hear in reply: "Gradle sucks because it's a hipster technology. It's new and unstable. Will you help me if something goes wrong?".
+I often hear in reply: “Gradle sucks because it's a hipster technology. It's new and unstable. Will you help me if something goes wrong?”.
 
 <!--more-->
 
@@ -43,7 +43,7 @@ Use them when you cannot fully isolate your build (i.e. using Docker) or when yo
 When you're using a wrapper there is no need to document build tool versions.
 +
 Or just use them for no reason.
- 2. Stop saying "unstable" and "not proven" for the technologies that you're just to lazy to get familiar with.
+ 2. Stop saying “unstable” and “not proven” for the technologies that you're just to lazy to get familiar with.
  3. Things can go wrong with any tool at any time.
  4. Don't use dirty hacks & tricks because they can block upgrades.
  5. If something is broken on upgrade don't abort the upgrade, fix things instead.
