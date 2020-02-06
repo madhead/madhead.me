@@ -10,10 +10,14 @@ hugo:
   image: ruby:latest
   before_script:
     - bundle install --jobs=3 --retry=3
-    - wget https://github.com/gohugoio/hugo/releases/download/v0.55.6/hugo_0.55.6_Linux-64bit.deb
-    - apt install ./hugo_0.55.6_Linux-64bit.deb -y
+    - wget https://github.com/gohugoio/hugo/releases/download/v0.64.0/hugo_0.64.0_Linux-64bit.deb
+    - apt install ./hugo_0.64.0_Linux-64bit.deb -y
   script:
     - hugo
+
+    # Dirty hack. Probably there is a better solution
+    - echo "madhead.me" > public/en/CNAME
+    - echo "ru.madhead.me" > public/ru/CNAME
   artifacts:
     name: $CI_COMMIT_SHA-$CI_JOB_NAME
     paths:
@@ -33,9 +37,12 @@ pages:
   environment:
     name: staging
     url: https://madhead.me.gitlab.io/madhead.me
+
 production:
   stage: deploy
-  image: madhead/git:latest
+  image:
+    name: alpine/git:latest
+    entrypoint: ["/bin/sh", "-c"]
   variables:
     GIT_STRATEGY: none
   before_script:
@@ -44,9 +51,18 @@ production:
     - mkdir ~/.ssh
     - ssh-keyscan github.com >> ~/.ssh/known_hosts
     - eval $(ssh-agent -s)
-    - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
   script:
-    - cd public
+    - cd public/ru
+    - ssh-add -D
+    - echo "$DEPLOY_KEY_RU" | tr -d '\r' | ssh-add - > /dev/null
+    - git init
+    - git remote add origin git@github.com:madhead/ru.madhead.github.io.git
+    - git add .
+    - git commit --allow-empty-message --message ''
+    - git push origin master -f
+    - cd ../en
+    - ssh-add -D
+    - echo "$DEPLOY_KEY_EN" | tr -d '\r' | ssh-add - > /dev/null
     - git init
     - git remote add origin git@github.com:madhead/madhead.github.io.git
     - git add .

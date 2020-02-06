@@ -1,33 +1,74 @@
 ---
-baseurl:          https://madhead.me/
+baseurl: https://madhead.me/
 
-theme:            minimo
+theme: minimo
 
-enableRobotsTXT:  true
+languages:
+  en:
+    languageName: English
+    contentDir: content/en
+    weight: 1
+    baseurl: https://madhead.me/
+    googleAnalytics: UA-101212543-1
+    menu:
+      sidebar:
+        - identifier: posts
+          name: posts
+          url: /posts/
+          weight: 1
+        - identifier: tags
+          name: tags
+          url: /tags/
+          weight: 2
+        - identifier: cv
+          name: cv
+          url: /cv/
+          weight: 3
+  ru:
+    languageName: Russian
+    contentDir: content/ru
+    weight: 2
+    baseurl: https://ru.madhead.me/
+    googleAnalytics: UA-101212543-2
+    menu:
+      sidebar:
+        - identifier: posts
+          name: посты
+          url: /posts/
+          weight: 1
+        - identifier: tags
+          name: теги
+          url: /tags/
+          weight: 2
+        - identifier: cv
+          name: cv
+          url: /cv/
+          weight: 3
 
-googleAnalytics:  UA-101212543-1
-disqusShortname:  madhead-me
+enableRobotsTXT: true
+
+disqusShortname: madhead-me
 
 taxonomies:
-  tag:            tags
+  tag: tags
 
 preserveTaxonomyNames: true
 
-paginate:         10
-buildFuture:      true
+paginate: 10
+buildFuture: true
 
 title: madhead
 
 params:
   settings:
-    accentColor:  '#000000'
+    accentColor: "#000000"
     showReadingTime: true
     hideEntryNavigation: true
     dateFormat: 2006-01-02
     archiveDateFormat: 2006-01-02
     listDateFormat: 2006-01-02
   sidebar:
-    enable:       true
+    enable: true
   social:
     email: siarhei.krukau@gmail.com
     gitlab: madhead
@@ -48,14 +89,14 @@ params:
 menu:
   sidebar:
     - identifier: posts
-      name:       posts
-      url:        /posts/
-      weight:     1
+      name: posts
+      url: /posts/
+      weight: 1
     - identifier: tags
-      name:       tags
-      url:        /tags/
-      weight:     2
+      name: tags
+      url: /tags/
+      weight: 2
     - identifier: cv
-      name:       cv
-      url:        /cv/
-      weight:     3
+      name: cv
+      url: /cv/
+      weight: 3
