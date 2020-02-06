@@ -5,7 +5,7 @@ theme: minimo
 
 languages:
   en:
-    languageName: English
+    languageName: EN
     contentDir: content/en
     weight: 1
     baseurl: https://madhead.me/
@@ -25,7 +25,7 @@ languages:
           url: /cv/
           weight: 3
   ru:
-    languageName: Russian
+    languageName: RU
     contentDir: content/ru
     weight: 2
     baseurl: https://ru.madhead.me/
