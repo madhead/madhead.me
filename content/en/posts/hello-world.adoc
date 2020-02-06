@@ -1,0 +1,9 @@
+---
+title: Hello, world!
+date: 2017-06-05T23:44:25+03:00
+---
+
+## Hello, world!
+
+So, I've decided to run my own blog.
+I will write my thoughts here from time to time.
