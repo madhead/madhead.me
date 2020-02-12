@@ -1,0 +1,217 @@
+---
+title: Speeding up the detekt task in a multi-project Gradle build.
+date: 2020-02-12T09:00:00+03:00
+tags:
+  - detekt
+  - kotlin
+  - gradle
+---
+
+I'm going to tell you how to significantly speed up the `detekt` task in a multi-project Gradle build.
+Precise numbers vary depending on many factors, of course.
+In my case, in a build with 56 subprojects and ~7000 lines of code, it was about *10 times faster*.
+
+<!--more-->
+
+Tasks in a multi-project Gradle builds are usually defined on a per-project basis.
+It means that every project will have its own unique instance of a task.
+Here is an example for detekt:
+
+[source,kotlin]
+----
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektPlugin
+
+subprojects {
+    apply<DetektPlugin>()
+
+    tasks {
+        withType<Detekt> {
+            parallel = true
+            config = files("$rootDir/detekt.yml")
+            buildUponDefaultConfig = false
+        }
+    }
+}
+----
+
+Here, the `DetektPlugin`, applied to every subproject, creates a `detekt` task in each of them.
+Thus, in a build with 56 subprojects there will be 56 different `detekt` tasks, one per subproject.
+
+They can be run with a simple command:
+
+[source,shell]
+----
+./gradlew clean detekt
+----
+
+Gradle will execute them one by one:
+
+[source]
+----
+> Task :module-a:detekt
+
+Complexity Report:
+        - 272 lines of code (loc)
+        - 223 source lines of code (sloc)
+        - 130 logical lines of code (lloc)
+        - 7 comment lines of code (cloc)
+        - 12 McCabe complexity (mcc)
+        - 0 number of total code smells
+        - 3 % comment source ratio
+        - 92 mcc per 1000 lloc
+        - 0 code smells per 1000 lloc
+
+Project Statistics:
+        - number of properties: 26
+        - number of functions: 3
+        - number of classes: 2
+        - number of packages: 4
+        - number of kt files: 8
+
+detekt finished in 1598 ms.
+Successfully generated HTML report at /home/madhead/Projects/detekt-faster/module-a/build/reports/detekt/detekt.html
+Successfully generated Checkstyle XML report at /home/madhead/Projects/detekt-faster/module-a/build/reports/detekt/detekt.xml
+Successfully generated plain text report at /home/madhead/Projects/detekt-faster/module-a/build/reports/detekt/detekt.txt
+
+> Task :module-b:detekt
+
+Complexity Report:
+        - 295 lines of code (loc)
+        - 253 source lines of code (sloc)
+        - 159 logical lines of code (lloc)
+        - 4 comment lines of code (cloc)
+        - 32 McCabe complexity (mcc)
+        - 0 number of total code smells
+        - 1 % comment source ratio
+        - 201 mcc per 1000 lloc
+        - 0 code smells per 1000 lloc
+
+Project Statistics:
+        - number of properties: 27
+        - number of functions: 6
+        - number of classes: 1
+        - number of packages: 2
+        - number of kt files: 5
+
+detekt finished in 1816 ms.
+Successfully generated HTML report at /home/madhead/Projects/detekt-faster/module-b/build/reports/detekt/detekt.html
+Successfully generated Checkstyle XML report at /home/madhead/Projects/detekt-faster/module-b/build/reports/detekt/detekt.xml
+Successfully generated plain text report at /home/madhead/Projects/detekt-faster/module-b/build/reports/detekt/detekt.txt
+
+…
+
+BUILD SUCCESSFUL in 1m 4s
+68 actionable tasks: 41 executed, 27 up-to-date
+----
+
+As you see, build takes about a minute.
+But what I see are three issues.
+
+ . Gradle has to instantiate 56 identical tasks here.
+And for detekt it means spawning a new process 56 times, parsing the config file 56 times (because processes cannot share in-memory parsed config), configuring embedded Kotlin compiler infrastructure that is used to parse the source 56 times, and, probably, doing more things 56 times, once per task.
+Take a look at the sources: https://github.com/arturbosch/detekt/blob/master/detekt-gradle-plugin/src/main/kotlin/io/gitlab/arturbosch/detekt/Detekt.kt[Detekt.kt] and https://github.com/arturbosch/detekt/blob/master/detekt-gradle-plugin/src/main/kotlin/io/gitlab/arturbosch/detekt/invoke/DetektInvoker.kt[DetektInvoker.kt]:
++
+.Detekt.kt
+[source,kotlin]
+----
+@TaskAction
+fun check() {
+    …
+
+    DetektInvoker.create(project).invokeCli(
+        arguments = arguments.toList(),
+        ignoreFailures = ignoreFailures,
+        classpath = detektClasspath.plus(pluginClasspath),
+        taskName = name
+    )
+}
+----
++
+.DetektInvoker.kt
+[source,kotlin]
+----
+…
+
+val proc = project.javaexec {
+    it.main = DETEKT_MAIN
+    it.classpath = classpath
+    it.args = listOf("@${argsFile.absolutePath}")
+    it.isIgnoreExitValue = true
+}
+val exitValue = proc.exitValue
+project.logger.debug("Detekt finished with exit value $exitValue")
+
+…
+----
++
+Perhaps it's possible to improve this behavior, but it's not trivial.
+I hope one day it will be more efficient, though.
+
+ . After the execution, you will have 56 different reports.
+It's hard to navigate between them.
+
+ . The `maxIssues` configuration parameter is applied to every project separately.
+So, if you have it set to 10, it means “ten issues in every subproject” instead of “ten issues total”.
+Though, it's ok for some people.
+
+Luckily, it's super easy to fix!
+All you need to do is to apply the detekt plugin to the root project and *configure a single “detekt all” task* with the scope of the whole project:
+
+[source,kotlin]
+----
+import io.gitlab.arturbosch.detekt.Detekt
+
+plugins {
+    id("io.gitlab.arturbosch.detekt").version("1.0.1")
+}
+
+tasks {
+    val detektAll by registering(Detekt::class) {
+        parallel = true
+        setSource(files(projectDir))
+        include("**/*.kt")
+        include("**/*.kts")
+        exclude("**/resources/**")
+        exclude("**/build/**")
+        config = files("$rootDir/detekt.yml")
+        buildUponDefaultConfig = false
+    }
+}
+----
+
+And that's it!
+See, how much faster it is:
+
+[source,shell]
+----
+./gradlew clean detektAll
+
+> Task :detektAll
+
+# List of issues I am ashamed of
+…
+
+Overall debt: 1h 45min
+
+# complexity report
+…
+
+detekt finished in 2518 ms.
+Successfully generated HTML report at /Users/madhead/Projects/detekt-faster/build/reports/detekt/detekt.html
+Successfully generated Checkstyle XML report at /Users/madhead/Projects/detekt-faster/build/reports/detekt/detekt.xml
+Successfully generated plain text report at /Users/madhead/Projects/detekt-faster/build/reports/detekt/detekt.txt
+Build succeeded with 9 weighted issues (threshold defined was 10).
+
+BUILD SUCCESSFUL in 6s
+36 actionable tasks: 1 executed, 35 up-to-date
+----
+
+Less tasks to run, ten times faster to execute!
+
+And what is super cool about this setup is that now you have a single report file that is easy to analyze.
+The `maxIssues` setting is now applied to the whole build, so it's now “ten issues total”.
+Finally, the new `detektAll` task does not interfere with the standard detekt behavior described in the first scenario: you can still execute the `detekt` task as described previously.
+
+I hope it was helpful.
+Have `fun`!
