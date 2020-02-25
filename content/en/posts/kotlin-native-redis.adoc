@@ -1,0 +1,668 @@
+---
+title: Redis module in Kotlin/Native
+date: 2020-03-11T09:00:00+03:00
+tags:
+  - kotlin
+  - kotlin/native
+  - redis
+---
+
+Those of you who have some experience with Redis may know that it is not just a simple cache or a plain key-value store, but actually a data structures server, supporting different kinds of values.
+Out of the box it supports binary-safe strings, sets, lists, hashes, bit arrays, streams and HyperLogLogs.
+Redis also https://redis.io/topics/modules-native-types[provides] a simple C API for custom data structures, called native types.
+Some of the popular community-supported native types are https://oss.redislabs.com/redisbloom[Bloom filters], https://oss.redislabs.com/redisgraph[graphs], https://oss.redislabs.com/redisjson[JSON objects], and https://oss.redislabs.com/redisai[tensors].
+
+Let's use Kotlin/Native to implement a simple data structure for parentheses expression validation just because we can.
+But first, I want to say thanks to https://research.jetbrains.org/researchers/artdegt[Artyom Degtyarev] from JetBrains, who helped a lot with Kotlin/Native in https://kotlinlang.slack.com[Kotlin Slack].
+
+<!--more-->
+
+## Contents
+
+* <<101, Redis 101>>
+* <<persistence, Redis persistence>>
+* <<modules, Redis modules>>
+* <<kn, Kotlin/Native Redis module>>
+** <<stack, Parentheses expression validation problem>>
+** <<cinterop, C Interop>>
+*** <<wrappers, Custom declarations>>
+** <<initialization, Module initialization>>
+** <<type, Exporting a native type>>
+*** <<domain, Domain-specific commands>>
+*** <<util, Utility functions>>
+** <<testing, Testing>>
+
+[#101]
+## Redis 101
+
+The best way to start with Redis, is, probably, https://www.openmymind.net/2012/1/23/The-Little-Redis-Book[The Little Redis Book] by Karl Seguin.
+It is absolutely free and takes about an hour to read (Karl mentioned in his blog that the book was written in only two days).
+
+But the bare minimum required to understand the rest of the article is that the idea of Redis is storing different data structures and providing access to them by key:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-redis/001.png" class="align-center">}}
+
+After grasping the basics consult with the https://redis.io/commands[list of Redis commands] for the details.
+
+[#persistence]
+## Redis persistence
+
+Redis persistence is an advanced topic and not every regular Redis user needs to dig in it.
+But as an author of a native type you need to understand it, as every native type needs to support the persistence.
+
+Basically, Redis https://redis.io/topics/persistence[provides two persistence modes]: RDB and AOF.
+RDB (AKA snapshotting) stands for Redis Database Backup and AOF stands for Append Only File.
+
+Snapshotting is the simplest persistence mode.
+It produces a point-in-time snapshot of the whole Redist dataset.
+Snapshots can be taken with https://redis.io/commands/save[`SAVE`] or https://redis.io/commands/bgsave[`BGSAVE`] commands, or configured to be taken periodically or after some predefined number of changes, whatever occurs first.
+Snapshots produce a binary file called `dump.rdb` in Redis's data directory.
+
+AOF is more cunning: every time a change is performed, that operation is logged into the append-only file `appendonly.aof` in the data directory.
+Operations are logged in the same format used by Redis, so the AOF can be just “replayed” to reconstruct the whole dataset.
+The problem is that the AOF grows as changes are performed.
+So Redis supports an interesting feature: it is able to rebuild the AOF in the background without downtime upon the execution of the https://redis.io/commands/bgrewriteaof[`BGREWRITEAOF`] command or periodically.
+As a result of AOF rewriting it will contain the shortest sequence of commands needed to rebuild the current dataset in memory.
+
+More details about Redis persistence can be found in Salvatore Sanfilippo's (the author of Redis) article: http://oldblog.antirez.com/post/redis-persistence-demystified.html[Redis persistence demystified].
+
+[#modules]
+## Redis modules
+
+https://redis.io/topics/modules-intro[Redis modules] make it possible to extend Redis functionality by implementing new functions and data structures.
+Redis modules are dynamic libraries (`.so` files), that can be loaded into Redis at startup or using the https://redis.io/commands/module-load[`MODULE LOAD`] command without downtime.
+Redis exports its API for the module authors in the form of a single C header file called https://github.com/antirez/redis/blob/unstable/src/redismodule.h[`redismodule.h`].
+
+[#kn]
+## Kotlin/Native Redis module
+
+Kotlin/Native allows developers to produce, among other deliveries, dynamic libraries.
+So, let's practice a little bit and create a module providing a native type for parentheses expression validation.
+
+[#stack]
+### Parentheses expression validation problem
+
+The https://www.educative.io/edpresso/the-valid-parentheses-problem[valid parentheses problem] involves checking that:
+
+ . Every opening parenthesis has a corresponding closing parenthesis.
+ . Every opening parenthesis should come before the corresponding closing parenthesis.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-redis/003.png" class="align-center">}}
+
+The classic approach to this problem is using a stack:
+
+ . Declare an empty stack.
+ . Traverse the expression from left to right.
+ . Push every opening parenthesis on the top of the stack.
+ . For every closing bracket, check the topmost stack element:
+ .. If it's a matching bracket, simply drop both.
+ .. If it's not a matching bracket, push the closing bracket on the top of the stack.
+ . If the expression is valid,​ then the stack will be empty once the input string finishes.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-redis/004.svg" class="align-center">}}
+
+One way to implement a stack is a https://en.wikipedia.org/wiki/Stack_(abstract_data_type)#Linked_list[singly linked list].
+Singly linked lists contain nodes that have a data field and a pointer to the next node in line of nodes.
+The last node will point to nothing, thereby marking the end of the list:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-redis/005.png" class="align-center">}}
+
+Let's finally write some code.
+https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L38[Here] is a Kotlin class for the single stack node for the parenthesis expression validation problem:
+
+[source,kotlin]
+----
+class Bracket(val prev: Bracket?, val symbol: Char)
+----
+
+And a class for the https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L40-71[whole expression]:
+
+[source,kotlin]
+----
+class Brackets {
+    private var head: Bracket? = null
+
+    fun push(symbol: Char) {
+      …
+    }
+
+    val valid: Boolean
+        get() = …
+
+    override fun toString(): String {
+      …
+    }
+}
+----
+
+`push` and `valid` members will make up our stack and `toString` will be used to print the whole stack and for persistence.
+
+`push` drops topmost stack element and the incoming bracket if they match and adds a new node if they don't match.
+For the sake of simplicity, there are no other checks and validations:
+
+[source,kotlin]
+----
+fun push(symbol: Char) {
+    head = if (
+            ((symbol == ')') && (head?.symbol == '(')) ||
+            ((symbol == ']') && (head?.symbol == '[')) ||
+            ((symbol == '}') && (head?.symbol == '{'))
+    ) {
+        head?.prev
+    } else {
+        Bracket(head, symbol)
+    }
+}
+----
+
+`valid` is as simple as checking if the `head` is `null`:
+
+[source,kotlin]
+----
+val valid: Boolean
+    get() = (head == null)
+----
+
+`toString` uses a recursion to construct a string representation of the stack:
+
+[source,kotlin]
+----
+override fun toString(): String {
+    fun visit(b: Bracket, buf: String): String {
+        return if (b.prev != null) {
+            visit(b.prev, b.symbol + buf)
+        } else {
+            b.symbol + buf
+        }
+    }
+
+    return this.head?.let {
+        visit(it, "")
+    } ?: ""
+}
+----
+
+The implementation is neither perfect nor safe, but it's just an example.
+There is a https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Test/kotlin/BracketsTest.kt[test] for the `Brackets` class on my GitLab, take a look.
+Also, note that we used only pure Kotlin code here (for both the domain logic and the tests), without any platform-specific dependencies.
+This code could be shared across JVM, JS and Native targets if needed, and that's a cool feature of Kotlin Multiplatform!
+
+[#cinterop]
+### C Interop
+
+Before being able to interact with Redis via bindings to its C API, we need to configure a https://kotlinlang.org/docs/reference/native/c_interop.html[C interop] with its `redismodule.h`.
+As the whole Redis API is defined in that single header, let's just copy it from https://github.com/antirez/redis/blob/unstable/src/redismodule.h[their GitHub] to the `src/nativeInterop/cinterop/redismodule.h`.
+Next step is to define a https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/nativeInterop/cinterop/redismodule.def[`src/nativeInterop/cinterop/redismodule.def`] file describing what things to include into the binding:
+
+[source]
+----
+headers = redismodule.h
+
+---
+
+# Custom declarations
+
+----
+
+Here we simply want to create bindings for the contents of `redismodule.h` plus a few <<wrappers, custom declarations>>.
+
+Kotlin Multiplatform Gradle plugin will https://kotlinlang.org/docs/reference/building-mpp-with-gradle.html#cinterop-support[do the rest]:
+
+[source,kotlin]
+----
+kotlin {
+    linuxX64 {
+        val main by compilations.getting {
+            val redismodule by cinterops.creating {
+                includeDirs("src/nativeInterop/cinterop")
+            }
+        }
+
+        binaries {
+            sharedLib("brackets_kn")
+        }
+    }
+}
+----
+
+[#wrappers]
+#### Custom declarations
+
+Redis relies heavily on macros in `redismodule.h`: all the API functions are exported using a macro  https://github.com/antirez/redis/blob/unstable/src/redismodule.h#L439[`REDISMODULE_API_FUNC`].
+This results in functions like https://redis.io/topics/modules-api-ref#coderedismodulecreatecommandcode[`RedisModule_CreateCommand`], used to provide a callback for custom command, to be seen by Kotlin/Native as a nullable global variable:
+
+[source,kotlin]
+----
+var RedisModule_CreateCommand: CPointer<CFunction<(CPointer<RedisModuleCtx>?, CPointer<ByteVar>?, RedisModuleCmdFunc?, CPointer<ByteVar>?, Int, Int, Int) -> Int>>?
+    get() = …
+    set(value) { … }
+----
+
+It forces an awkward bang-bang syntaxt at call sites:
+
+[source,kotlin]
+----
+(RedisModule_CreateCommand!!)(ctx, …)
+----
+
+To mitigate that, one can https://kotlinlang.org/docs/reference/native/c_interop.html#adding-custom-declarations[add a wrapper declaration] in a `.def` file:
+
+[source]
+----
+static inline int RedisModuleWrapper_CreateCommand(RedisModuleCtx *ctx, const char *name, RedisModuleCmdFunc cmdfunc, const char *strflags, int firstkey, int lastkey, int keystep) {
+    return RedisModule_CreateCommand(ctx, name, cmdfunc, strflags, firstkey, lastkey, keystep);
+}
+----
+
+Another usecase I found useful is C functions with variadic arguments, like https://redis.io/topics/modules-api-ref#coderedismoduleemitaofcode[`RedisModule_EmitAOF`].
+Kotlin/Native sees it as:
+
+[source,kotlin]
+----
+var RedisModule_EmitAOF: COpaquePointer?
+    get() = …
+    set(value) { … }
+----
+
+And that's completely unusable!
+I had to create a custom wrapper specifically for my usecase:
+
+[source]
+----
+static inline void Brackets_EmitAOF(RedisModuleIO *io, const RedisModuleString *key, char *bracket) {
+    return RedisModule_EmitAOF(io, "BRACKETS.KN.PUSH", "sc", key, bracket);
+}
+----
+
+`RedisModuleWrapper_CreateCommand` and `Brackets_EmitAOF` will be seen by Kotlin/Native as a regular functions.
+
+[#initialization]
+### Module initialization
+
+Now, having the domain objects defined and the C interop configured the next thing to do is to actually create a Redis module.
+Every Redis module needs to expose a `RedisModule_OnLoad` function.
+Redis will call it upon loading the module, this is the place where you tell the Redis what your module is.
+Let's define it:
+
+[source,kotlin]
+----
+@CName("RedisModule_OnLoad") // <1>
+fun RedisModule_OnLoad(
+        ctx: CPointer<RedisModuleCtx>?,
+        argv: CPointer<CPointerVar<RedisModuleString>>?,
+        argc: Int // <2>
+): Int {
+    // <3>
+    if (!initRedisModule(ctx)) {
+        return REDISMODULE_ERR
+    }
+
+    // <4>
+    if (!registerVersionFunction(ctx)) {
+        return REDISMODULE_ERR
+    }
+
+    // <5>
+    if (!registerBracketsType(ctx)) {
+        return REDISMODULE_ERR
+    }
+
+    // <6>
+    return REDISMODULE_OK
+}
+----
+<1> `@CName` is used to prevent name mangling and export the function under the exact name `RedisModule_OnLoad`.
+<2> The signature of the `RedisModule_OnLoad` should be `int RedisModule_OnLoad(RedisModuleCtx \*, RedisModuleString **, int)`.
+This is a Kotlin/Native equivalent.
+<3> Init the module.
+<4> Export a function that will respond with the module's version.
+It's an optional step, just to show how to define custom commands.
+<5> Export a native type.
+Details are described in a separate <<type, section>>.
+<6> If everything is ok, return `REDISMODULE_OK`.
+
+https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/brackets.kt#L41-42[`initRedisModule`] is a wrapper around `RedisModule_Init`, provided by Redis.
+Its parameters include module context, module name, module version, and target Redis API version.
+We'll use "brackets.kn" as a module name and integer "1" as a module version, defined in a global constant `BRACKETS_KN_VERSION`.
+`REDISMODULE_APIVER_1` is provided by Redis in `redismodule.h`.
+
+[source,kotlin]
+----
+private fun initRedisModule(ctx: CPointer<RedisModuleCtx>?) =
+        RedisModule_Init(ctx, "brackets.kn", BRACKETS_KN_VERSION, REDISMODULE_APIVER_1) != REDISMODULE_ERR
+----
+
+https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/brackets.kt#L44-45[Exporting a version function] is straightfowrard as well, the only interesting part is aquiring a pointer to a Kotlin function to pass as a callback to the `RedisModuleWrapper_CreateCommand` (which is a <<wrappers, wrapper>> around https://redis.io/topics/modules-api-ref#coderedismodulecreatecommandcode[`RedisModule_CreateCommand`]) via https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/static-c-function.html[`staticCFunction`]:
+
+[source,kotlin]
+----
+fun bracketsKnVersion(ctx: CPointer<RedisModuleCtx>?, argv: CPointer<CPointerVar<RedisModuleString>>?, argc: Int): Int {
+    println("bracketsKnVersion")
+    (RedisModule_ReplyWithLongLong!!)(ctx, BRACKETS_KN_VERSION.toLong())
+    return REDISMODULE_OK
+}
+
+private fun registerVersionFunction(ctx: CPointer<RedisModuleCtx>?) =
+        RedisModuleWrapper_CreateCommand(ctx, "brackets.kn.version", staticCFunction(::bracketsKnVersion), "", 0, 0, 0) != REDISMODULE_ERR
+----
+
+[#type]
+### Exporting a native type
+
+Finally, we approached https://redis.io/topics/modules-native-types[native types]!
+
+A module exporting a native type is composed of the following parts:
+
+ * The implementation of some kind of new data structure and commands operating on the new data structure.
+We've done the Redis-agnostic part in the <<stack, `Brackets`>> class.
+ * A set of callbacks that handle: RDB saving, RDB loading, AOF rewriting, releasing of a value associated with a key and some other, optional, events.
+ * A 9 character name that is unique to each module native data type.
+ * An encoding version used to persist into RDB files a module-specific data version so that a module will be able to load older representations from RDB files.
+
+A very easy to understand but complete example of native type implementation is available inside the Redis distribution in the https://github.com/antirez/redis/blob/unstable/src/modules/hellotype.c[`/modules/hellotype.c`] file.
+Actually, our stack is the same singly linked list as in this file.
+
+To register a new native type into the Redis core, the module needs to declare a global variable that will hold a reference to the data type.
+The API to register the data type will return a data type reference that will be stored in the global variable.
+That global variable will be used later to check the types of the values in commands operating on that native data type.
+
+[source,kotlin]
+----
+lateinit var KNBracketType: CPointer<RedisModuleType>
+
+fun registerBracketsType(ctx: CPointer<RedisModuleCtx>?): Boolean {
+    // <1>
+    KNBracketType = RedisModuleWrapper_CreateDataType(
+            ctx,
+            "KNBRACKET", // <2>
+            BRACKETS_KN_VERSION, // <3>
+            cValue { // <4>
+                version = BRACKETS_KN_VERSION.toULong()
+                rdb_load = staticCFunction(::bracketsRdbLoad)
+                rdb_save = staticCFunction(::bracketsRdbSave)
+                aof_rewrite = staticCFunction(::bracketsAofRewrite)
+                free = staticCFunction(::bracketsFree)
+            }
+    ) ?: return false
+
+    // Registering native type commands
+
+    return true
+}
+----
+<1> Calling the https://redis.io/topics/modules-api-ref#coderedismodulecreatedatatypecode[`RedisModule_CreateDataType`] function via a <<wrappers, wrapper>> to register a native type.
+Returning `false` as a guard here results in module registration failure upper in the stack, in `RedisModule_OnLoad`.
+<2> A https://redis.io/topics/modules-native-types#ok-but-emwhyem-modules-types-require-a-9-characters-name[9 character name] for our native type.
+<3> Encoding version.
+We'll simply use `BRACKETS_KN_VERSION`, our module's version, everywhere.
+<4> A pointer to a `RedisModuleTypeMethods` structure that should be populated with the methods callbacks and structure version.
+https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/static-c-function.html[`staticCFunction`] is again our friend.
+
+Now, let's expose ``Bracket``'s operations.
+
+[#domain]
+#### Domain-specific commands
+
+We'll need three main operations for our data type:
+
+ * Pushing bracket to the expression
+ * Checking if the expression is valid
+ * Printing the current expression
+
+That operations correspond to the members of `Brackets` type <<stack, above>>, but they need to be wrapped into Redis commands:
+
+[source,kotlin]
+----
+fun registerBracketsType(ctx: CPointer<RedisModuleCtx>?): Boolean {
+    // Registering a native type
+
+    if (RedisModuleWrapper_CreateCommand(ctx, "brackets.kn.push", staticCFunction(::bracketsKnPush), "write deny-oom", 1, 1, 1) == REDISMODULE_ERR) {
+        return false
+    }
+
+    if (RedisModuleWrapper_CreateCommand(ctx, "brackets.kn.print", staticCFunction(::bracketsKnPrint), "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        return false
+    }
+
+    if (RedisModuleWrapper_CreateCommand(ctx, "brackets.kn.valid", staticCFunction(::bracketsKnValid), "readonly", 1, 1, 1) == REDISMODULE_ERR) {
+        return false
+    }
+
+    return true
+}
+----
+
+Here, we marked `brackets.kn.push` command as a one that changes the dataset (`write` flag).
+`deny-oom` means that the command may use additional memory and should be denied during out of memory conditions.
+
+`brackets.kn.print` and `brackets.kn.valid` commands are read-only.
+
+All the commands expect a single argument, and that argument is a key of the value in the dataset.
+That's what those cryptic `1, 1, 1` arguments mean.
+
+Let's look at the https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L73-129[`bracketsKnPush`], the most complex function:
+
+[source,kotlin]
+----
+fun bracketsKnPush(ctx: CPointer<RedisModuleCtx>?, argv: CPointer<CPointerVar<RedisModuleString>>?, argc: Int): Int {
+    println("bracketsKnPush")
+
+    // <1>
+    if (argc != 3) {
+        return (RedisModule_WrongArity!!)(ctx)
+    }
+
+    // <2>
+    if (argv == null) {
+        memScoped {
+            return (RedisModule_ReplyWithError!!)(ctx, "argv is null".cstr.ptr)
+        }
+    }
+
+    // <3>
+    val bracket = memScoped {
+        (RedisModule_StringPtrLen!!)(argv[2], alloc<ULongVar>().ptr)?.toKString()?.get(0) ?: ' '
+    }
+
+    // <4>
+    if (bracket !in listOf('(', ')', '{', '}', '[', ']')) {
+        memScoped {
+            return (RedisModule_ReplyWithError!!)(ctx, "Please, push only one of the `(`, `)`, `{`, `}`, `[`, `]` symbols".cstr.ptr)
+        }
+    }
+
+    // <5>
+    val key = (RedisModule_OpenKey!!)(ctx, argv[1], REDISMODULE_READ or REDISMODULE_WRITE)?.reinterpret<cnames.structs.RedisModuleKey>()
+
+    // <6>
+    val type = (RedisModule_KeyType!!)(key)
+
+    // <7>
+    if ((type != REDISMODULE_KEYTYPE_EMPTY) && ((RedisModule_ModuleTypeGetType!!)(key) != KNBracketType)) {
+        memScoped {
+            return (RedisModule_ReplyWithError!!)(ctx, REDISMODULE_ERRORMSG_WRONGTYPE.cstr.ptr)
+        }
+    }
+
+    if (type == REDISMODULE_KEYTYPE_EMPTY) {
+        // <8>
+        val obj = Brackets()
+
+        obj.push(bracket)
+
+        (RedisModule_ModuleTypeSetValue!!)(key, KNBracketType, StableRef.create(obj).asCPointer())
+    } else {
+        // <9>
+        (RedisModule_ModuleTypeGetValue!!)(key)?.asStableRef<Brackets>()?.let { ref ->
+            ref.get().push(bracket)
+        }
+    }
+
+    // <10>
+    memScoped {
+        (RedisModule_ReplyWithSimpleString!!)(ctx, "OK".cstr.ptr)
+    }
+
+    (RedisModule_CloseKey!!)(key) // <11>
+    (RedisModule_ReplicateVerbatim!!)(ctx) // <12>
+
+    return REDISMODULE_OK
+}
+----
+<1> Check the number of arguments.
+`brackets.kn.push` is called with two arguments — a key and a bracket, so the total number of arguments will be three (the first one will be the command itself).
+Calling https://redis.io/topics/modules-api-ref#coderedismodulewrongaritycode[`RedisModule_WrongArity`] here will result in an error telling the user about the wrong number of arguments.
+<2> This actually should not happen, but…
+<3> Extracting the bracket character from the third argument (`argv[2]`).
+`memScoped` is needed for `alloc<ULongVar>`, but that value is not used, it is only needed for the https://redis.io/topics/modules-api-ref#coderedismodulestringptrlencode[`RedisModule_StringPtrLen`] call.
+<4> Validating the input.
+Only brackets are allowed.
+<5> https://redis.io/topics/modules-api-ref#coderedismoduleopenkeycode[Opening the key] for writing so that it is possible to call other APIs with the key handle as an argument to perform operations on the key.
+Don't forget to call https://redis.io/topics/modules-api-ref#coderedismoduleclosekeycode[`RedisModule_CloseKey`].
+Yeah, better wrap that with `try` one day…
+<6> https://redis.io/topics/modules-api-ref#coderedismodulekeytypecode[Querying the key type].
+If there is no value associated with that key, `REDISMODULE_KEYTYPE_EMPTY` will be returned.
+<7> Fail with `REDISMODULE_ERRORMSG_WRONGTYPE` message if there is a value associated with that key and it is not empty or of our type.
+<8> Create a new `Brackets` value, push the bracket into it, and https://redis.io/topics/modules-api-ref#coderedismodulemoduletypesetvaluecode[store] the value in the dataset.
+The value is wrapped in a https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/-stable-ref/[`StableRef`] so that Kotlin/Native runtime will maintain a stable address for it.
+https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/-stable-ref/dispose.html[`dispose`] must be called on that `StableRef` instance when it's not needed anymore allowing Kotlin/Native's GC to collect the object.
+<9> For the existing values, just call the `push`.
+<10> Replying with "OK".
+<11> https://redis.io/topics/modules-api-ref#coderedismoduleclosekeycode[Closing] the key.
+<12> https://redis.io/topics/modules-api-ref#coderedismodulereplicateverbatimcode[Replicating] the command to slaves and AOF.
+Yes, you get the <<persistence, AOF persistence>> almost for free!
+
+https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L131-165[`bracketsKnPrint`] and https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L167-201[`bracketsKnValid`] are similar to the `bracketsKnPush`: they open the key, check the type and call `.toString()` or `.valid` on the `Brackets` value.
+I won't provide the code here, as this article became really big.
+
+Now, let's take a look at the utility functions `bracketsRdbLoad`, `bracketsRdbSave`, `bracketsAofRewrite` and `bracketsFree`.
+They have nothing to do with our <<stack, problem>>, but they are required by Redis.
+
+[#util]
+#### Utility functions
+
+https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L203-228[`bracketsRdbLoad`] and https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L231-244[`bracketsRdbSave`] callbacks are required by Redis to support <<persistence, RDB persistence>>.
+Developers are free to use any kind of encoding for their types.
+The only limit is imagination and the set of available API functions:
+
+ * https://redis.io/topics/modules-api-ref#coderedismodulesaveunsignedcode[`RedisModule_SaveUnsigned`] / https://redis.io/topics/modules-api-ref#coderedismoduleloadunsignedcode[`RedisModule_LoadUnsigned`]
+ * https://redis.io/topics/modules-api-ref#coderedismodulesavesignedcode[`RedisModule_SaveSigned`] / https://redis.io/topics/modules-api-ref#coderedismoduleloadsignedcode[`RedisModule_LoadSigned`]
+ * https://redis.io/topics/modules-api-ref#coderedismodulesavestringcode[`RedisModule_SaveString`] / https://redis.io/topics/modules-api-ref#coderedismoduleloadstringcode[`RedisModule_LoadString`]
+ * https://redis.io/topics/modules-api-ref#coderedismodulesavestringbuffercode[`RedisModule_SaveStringBuffer`] / https://redis.io/topics/modules-api-ref#coderedismoduleloadstringbuffercode[`RedisModule_LoadStringBuffer`]
+ * https://redis.io/topics/modules-api-ref#coderedismodulesavedoublecode[`RedisModule_SaveDouble`] / https://redis.io/topics/modules-api-ref#coderedismoduleloaddoublecode[`RedisModule_LoadDouble`]
+ * https://redis.io/topics/modules-api-ref#coderedismodulesavefloatcode[`RedisModule_SaveFloat`] / https://redis.io/topics/modules-api-ref#coderedismoduleloadfloatcode[`RedisModule_LoadFloat`]
+
+Let's use https://redis.io/topics/modules-api-ref#coderedismodulesavestringbuffercode[`RedisModule_SaveStringBuffer`] / https://redis.io/topics/modules-api-ref#coderedismoduleloadstringbuffercode[`RedisModule_LoadStringBuffer`] to persist our stack as a simple string.
+Redis will call `bracketsRdbSave` with a pointer to the `RedisModuleIO` structure, used for RBD operations, and a pointer to the memory location with our data.
+As you saw in the <<domain, previous section>> the values will be stored using Kotlin/Native's https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/-stable-ref/[`StableRef`], a class used to provide a way to create a stable handle to any Kotlin object.
+So, in `bracketsRdbSave` we cast the value to `StableRef<Brackets>`, then, if it's not empty, convert it to a string using `Brackets#toString` function, and save it.
+https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/mem-scoped.html[`memScoped`] is needed to obtain a https://kotlinlang.org/api/latest/jvm/stdlib/kotlinx.cinterop/-mem-scope/ptr.html[short-lived pointer] to the null-terminated string to pass to the https://redis.io/topics/modules-api-ref#coderedismodulesavestringbuffercode[`RedisModule_SaveStringBuffer`].
+Note that this may be unsafe if `RedisModule_SaveStringBuffer` store that pointer for later use, but it seems to use it immediately, so we're good.
+ 
+[source,kotlin]
+----
+fun bracketsRdbSave(rdb: CPointer<RedisModuleIO>?, value: COpaquePointer?) {
+    println("bracketsRdbSave")
+
+    value?.asStableRef<Brackets>()?.get()?.let {
+        memScoped {
+            val str = it.toString().cstr
+
+            (RedisModule_SaveStringBuffer!!)(rdb, str.ptr, str.size.toULong())
+        }
+    }
+}
+----
+
+In `bracketsRdbLoad` we'll do the opposite: read the null-terminated string from the RDB file and recreate `Brackets` by pushing the brackets one by one.
+The result is wrapped into a `StableRef` and the pointer returned.
+
+[source,kotlin]
+----
+fun bracketsRdbLoad(rdb: CPointer<RedisModuleIO>?, encver: Int): COpaquePointer? {
+    println("bracketsRdbLoad")
+
+    if (encver != BRACKETS_KN_VERSION) {
+        println("Cannot load version $encver")
+
+        return null
+    }
+
+    val value = memScoped {
+        val value = (RedisModule_LoadStringBuffer!!)(rdb, alloc<ULongVar>().ptr)
+
+        value?.toKString() ?: ""
+    }
+
+    val obj = Brackets()
+
+    value.forEach {
+        obj.push(it)
+    }
+
+    return StableRef.create(obj).asCPointer()
+}
+----
+
+In `bracketsAofRewrite` all we need to do is to emit a sequence of pushes.
+Here I use a `Brackets_EmitAOF` function, a <<wrappers, wrapper>> around the https://redis.io/topics/modules-api-ref#coderedismoduleemitaofcode[`RedisModule_EmitAOF`].
+
+[source,kotlin]
+----
+fun bracketsAofRewrite(aof: CPointer<RedisModuleIO>?, key: CPointer<RedisModuleString>?, value: COpaquePointer?) {
+    println("bracketsAofRewrite")
+
+    value?.asStableRef<Brackets>()?.get()?.let {
+        it.toString().forEach { bracket ->
+            Brackets_EmitAOF(aof, key, "$bracket".cstr)
+        }
+    }
+}
+----
+
+This function called for a `Brackets` value storing `({[` symbols under the key `key`, will basically emit a sequence of command like:
+
+[source]
+----
+BRACKETS.KN.PUSH key (
+BRACKETS.KN.PUSH key {
+BRACKETS.KN.PUSH key [
+----
+
+Obviously, by replaying this sequence, the original `Brackets` value can be recreated.
+
+https://gitlab.com/madhead-playgrounds/redis/-/blob/master/kn/src/linuxX64Main/kotlin/bracketsType.kt#L260-264[`bracketsFree`] simply disposes a `StableRef` that we created via `brackets.kn.push` command or in `bracketsRdbLoad`.
+Kotlin/Native's GC then will be able to recycle that object.
+
+[source,kotlin]
+----
+fun bracketsFree(value: COpaquePointer?) {
+    println("bracketsFree")
+
+    value?.asStableRef<Brackets>()?.dispose()
+}
+----
+
+[#testing]
+## Testing
+
+You've already seen a few links to the source code for this article, but to be clear: https://gitlab.com/madhead-playgrounds/redis[madhead-playgrounds/redis] on GitLab or https://github.com/madhead/kn-redis[madhead/kn-redis] if you prefer GitHub.
+Clone or fork, or just give it a star.
+If you want to get your hands dirty, follow the instructions in the `README`, you'll need Docker Compose.
+I've tried to configure things so that you only need to build the code and start the container, the modules will be loaded automagically.
+
+Let's tail the logs of the Redis container in a separate console and see what happens upon the execution of some commands:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-redis/006.png" class="align-center">}}
+
+Let's also check the AOF:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/kotlin-native-redis/007.png" class="align-center">}}
+
+Seems good.
+The dataset is recreated correctly after the restart with both RDB and AOF.
+
+Congratulations, we've done!
+Thank you for reading to the end of the article, I hope you found it informative.
+
+Have `fun`!
