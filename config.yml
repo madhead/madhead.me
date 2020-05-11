@@ -22,7 +22,7 @@ languages:
           weight: 2
         - identifier: cv
           name: cv
-          url: /cv/
+          url: https://stackoverflow.com/cv/madhead
           weight: 3
   ru:
     languageName: RU
@@ -42,7 +42,7 @@ languages:
           weight: 2
         - identifier: cv
           name: cv
-          url: /cv/
+          url: https://stackoverflow.com/cv/madhead
           weight: 3
 
 enableRobotsTXT: true
