@@ -10,8 +10,8 @@ hugo:
   image: ruby:latest
   before_script:
     - bundle install --jobs=3 --retry=3
-    - wget https://github.com/gohugoio/hugo/releases/download/v0.68.3/hugo_0.68.3_Linux-64bit.deb
-    - apt install ./hugo_0.68.3_Linux-64bit.deb -y
+    - wget https://github.com/gohugoio/hugo/releases/download/v0.71.0/hugo_0.71.0_Linux-64bit.deb
+    - apt install ./hugo_0.71.0_Linux-64bit.deb -y
   script:
     - hugo
 
