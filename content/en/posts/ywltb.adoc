@@ -1,0 +1,38 @@
+---
+title: YouTube Watch Later Telegram Bot
+date: 2020-05-20T09:00:00+03:00
+tags:
+  - pet project
+  - telegram
+---
+
+https://ywltb.herokuapp.com[YWLTB] — or YouTube Watch Later Telegram Bot — is a Telegram bot that does one simple thing: adds incoming YouTube videos into your "Watch Later" playlist. 
+
+<!--more-->
+
+Friends often send me YouTube videos in Telegram DMs or chats.
+Some of those videos are even worth watching.
+They usually go to "Saved Messages" in Telegram, where are effectively lost after some time.
+At the same time, YouTube has a special place for them: a "Watch Later" playlist.
+I even watch it periodically, e.g. while cooking.
+Opening a video on the phone just to press that "Watch Later" button takes a stupidly lot of time.
+So I thought about a Telegram bot who will save the incoming videos to my "Watch Later" playlist.
+
+That's how https://t.me/YouTubeWatchLaterBot[@YouTubeWatchLaterBot] was born.
+
+Enjoy!
+And don't be afraid that I would add some spam into your playlists.
+The https://gitlab.com/madhead/YWLTB[code is open-sourced] (although I am ashamed to share it), the best Harvard alumni crafted my https://ywltb.herokuapp.com/privacy.html[Privacy Policy], and the app successfully passed Google API OAuth Dev Verification.
+However, if you are really paranoid but still want to use it — run your own instance, the guide is in https://gitlab.com/madhead/YWLTB/-/blob/master/README.adoc[README], and free Heroku account will be enough.
+
+A few words about the verification process, for those who are interested in it.
+Google https://support.google.com/cloud/answer/9110914[has three API access levels] for user data: general, sensitive, restricted.
+A developer can use the first one without any hassle.
+The second requires verification.
+Third requires a security assessment, that costs $15К — $75К (or even more).
+Sensitive API access level is enough to manage user's "Watch Later" playlist.
+To pass the review you need a publicly accessible web page describing your project, a privacy policy, and a demo video, describing how you use the API to work with user data.
+The result of the review was e-mailed to me in a day.
+In general, it's not necessary to pass the review if you don't plan to surpass one hundred (or so) users limit.
+
+Keep your inbox empty and read books!
