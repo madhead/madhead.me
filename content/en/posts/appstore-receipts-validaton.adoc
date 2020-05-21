@@ -1,0 +1,51 @@
+---
+title: 'Fear and loathing of server-side App Store receipts validation'
+date: 2020-05-27T09:00:00+03:00
+tags:
+  - app store
+  - pain
+---
+
+Some time ago, I wrote a link:../appstore-receipts-validator-j[blogpost] about my https://gitlab.com/madhead/appstore-receipts-validator-j[Java library for App Store receipts validation].
+Recently, I was contacted by another developer working on a server-side App Store receipts validation.
+He found my article and then contacted me in Telegram, we had a pretty long conversation and discussed a lot of nuances.
+I never thought that receipt validation could be of some interest, but after that conversation I realized how much pain I have expirienced and how much intricacies are there in this task.
+
+So here it is: everything I wish I knew about server-side App Store receipts validation before I did it for the first time.
+
+<!--more-->
+
+## Contents
+
+* <<disclaimer, Disclaimer>>
+* <<intro, Server-size receipts validation>>
+* <<receipts, App Store receipts>>
+* <<docs, Apple documentation>>
+* <<docs, Apple documentation>>
+
+[#disclaimer]
+## Disclaimer
+
+[#intro]
+## Server-size receipts validation?
+
+### What & Why?
+### 2 types of recipes, why it's important
+
+[#receipts]
+## App Store receipts
+
+[#docs]
+## Apple documentation
+
+### Docs
+
+
+HTML instead of JSON
+How to detekt new transactions / groups
+Incrementing transaction ids (bug?)
+How to check expired subscriptions / Useless S2S
+https://medium.com/revenuecat-blog/ios-subscriptions-are-hard-d9b29c74e96f
+204 S2S
+No money in /verifyReceipt
+Fastlane / spaceship

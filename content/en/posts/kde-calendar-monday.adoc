@@ -4,6 +4,7 @@ date: 2018-08-18T22:01:00+03:00
 tags:
   - linux
   - kde
+  - pain
 ---
 
 `en_US.UTF-8` is a great locale and I am using it for my KDE desktop because it gives me full English UI, whereeas other locales can result in semi-translated UIs.
