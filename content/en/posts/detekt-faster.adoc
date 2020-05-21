@@ -5,6 +5,7 @@ tags:
   - detekt
   - kotlin
   - gradle
+  - pain
 ---
 
 I'm going to tell you how to significantly speed up the `detekt` task in a multi-project Gradle build.

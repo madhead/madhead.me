@@ -5,6 +5,7 @@ tags:
   - maven
   - gradle
   - rant
+  - pain
 ---
 
 Sometimes I'm trying to show others that there is a better alternative to Maven: Gradle.

@@ -3,10 +3,8 @@ title: 'Java classes for server-side App Store receipts validation'
 date: 2018-11-13T21:00:00+03:00
 tags:
   - java
-  - aws
-  - aws lambda
-  - aws api gateway
   - pet projects
+  - app store
 ---
 
 I'm working on a bunch of apps that need to verify App Store receipts on a JVM-based server.

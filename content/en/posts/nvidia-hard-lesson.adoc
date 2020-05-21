@@ -5,6 +5,7 @@ tags:
   - linux
   - nvidia
   - rant
+  - pain
 ---
 
 Last week I've managed to accidentally break my Linux installation.
