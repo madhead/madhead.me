@@ -1,0 +1,65 @@
+---
+title: 'How I fucked up with enum''s hashCode'
+date: 2020-05-27T09:00:00+03:00
+tags:
+  - java
+  - kotlin
+  - fuckup
+---
+
+A short story about a newbie's mistake I've made recently.
+
+<!--more-->
+
+I was implementing an HTTP caching for one of our APIs, https://en.wikipedia.org/wiki/HTTP_ETag[based on "ETag" and "If-None-Match"] headers.
+The entity I was trying to cache — `Feed` — was simple:
+
+[source, kotlin]
+----
+data class Feed(
+    val deviceId: String,
+    val platform: Platform,
+    val items: List<FeedItem>
+)
+
+enum class Platform {
+    IOS, ANDROID
+}
+
+data class FeedItem(
+    val id: Int
+    // Integers and strings
+)
+----
+
+I decided to use `hashCode()` for ETags.
+
+I knew that both `Integer` and `String` have a well-defined and stable hash code: https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/lang/Integer.html#hashCode()[`Integer#hashCode()`] is equal to the primitive value represented by that `Integer` object, and https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/lang/String.html#hashCode()[`String#hashCode()`] uses a known formula.
+https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/util/List.html#hashCode()[`List#hashCode()`] is stable as well as long as it's elements have stable hash codes.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/enums-fuckup/001.gif" class="align-center">}}
+
+Of course not, we're not happy!
+I forgot to check the details about https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/lang/Enum.html#hashCode()[`Enum#hashCode()`] method.
+
+And here be dragons: **enum's hash code is not stable across different JVM instances**.
+I assumed wrongly that it is calculated as value's https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/lang/Enum.html#ordinal()[`ordinal()`], which is `Integer`, which, we know, has a stable hash code, equal to itself.
+But it's not.
+Enum's hash code is defined in Java (Kotlin is virtually the same) as:
+
+[source, java]
+----
+public final int hashCode() {
+    return super.hashCode();
+}
+----
+
+Here, `super` is an `Object`, and, https://docs.oracle.com/en/java/javase/13/docs/api/java.base/java/lang/Object.html#hashCode()[as we know], ``Object``'s hash code is stable unless the object itself is changed.
+It's generally the case with enums: there is only one instance of each of enum's values per JVM and they are stable.
+But it's important to emphasize, that it applies to a single JVM.
+**Enum's on different JVMs will have different hash codes.**
+
+And that's how our ETags were broken: every time the request landed on a new server, the ETag was different, even if the objects stored in the database were the same.
+The situation was worsened by the fact that we were using short-lived JVMs (https://aws.amazon.com/lambda[AWS Lambda functions]), so the caching was completely broken for a while until I tracked down this issue.
+
+RTFM!
