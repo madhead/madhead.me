@@ -1,6 +1,6 @@
 ---
 title: 'Fear and loathing of server-side App Store receipts validation'
-date: 2020-05-27T09:00:00+03:00
+date: 2020-06-03T09:00:00+03:00
 tags:
   - app store
   - pain
@@ -18,7 +18,7 @@ So here it is: everything I wish I knew about server-side App Store receipts val
 ## Contents
 
 * <<disclaimer, Disclaimer>>
-* <<intro, Server-size receipts validation>>
+* <<intro, Server-side receipts validation>>
 * <<receipts, App Store receipts>>
 * <<docs, Apple documentation>>
 * <<docs, Apple documentation>>
@@ -26,8 +26,33 @@ So here it is: everything I wish I knew about server-side App Store receipts val
 [#disclaimer]
 ## Disclaimer
 
+I am not an expert and I may be wrong.
+I may misunderstood some concepts.
+Everything I say here is my personal opinion based on my personal expirience.
+The information I provide here may be obsolete, always keep in mind the https://developer.apple.com/documentation/storekit/in-app_purchase/validating_receipts_with_the_app_store[official] https://developer.apple.com/documentation/appstorereceipts[documentation].
+
 [#intro]
-## Server-size receipts validation?
+## Server-side receipts validation
+
+Let's talk about receipts and their validation first.
+
+In this article, by App Store receipt (or just receipt) I mean a piece of information about a purchase made from within the app.
+Thus, by employing receipt validation techniques you can authenticate purchased content.
+
+There are two receipt validation techniques: on-device receipt validation and server-side receipt validation.
+A developer should https://developer.apple.com/documentation/storekit/in-app_purchase/choosing_a_receipt_validation_technique[compare both approaches] and determine the best fit his app.
+He can also choose to implement both.
+
+I'll be talking solely about server-side receipt validation in this article.
+
+From the server-side point of view, a receipt is just a long string, like:
+
+[source]
+----
+MIIcSAYJKoZIhvcNAQcCoIIcOTCCHDUCAQExCzAJBgUrDgMCGgUAMIIL+QYJKoZIhvcNAQcBoIIL6gS
+…9622 symbols skipped…
+J8rloluUN2JvNwiFzPY0eAtCToLpBfGdL2I3ymDFJWiQbCuuNRa/PfGBFpMc0PGSqyQ0C5GFULTDVU=
+----
 
 ### What & Why?
 ### 2 types of recipes, why it's important
