@@ -7,7 +7,7 @@ tags:
 ---
 
 Some time ago, I wrote a link:../appstore-receipts-validator-j[blogpost] about my https://gitlab.com/madhead/appstore-receipts-validator-j[Java library for App Store receipts validation].
-Recently, another developer working on a server-side App Store receipts validation contacted me after finding my article.
+Recently, another developer working on a server-side App Store receipts validation contacted me after reading that article.
 We had a pretty long conversation and discussed a lot of nuances.
 I never thought that receipt validation could be of some interest, but after that conversation I realized how much pain I have expirienced and how much intricacies are there in this task.
 
@@ -19,8 +19,6 @@ So here it is: everything I wish I knew about server-side App Store receipts val
 
 * <<disclaimer, Disclaimer>>
 * <<intro, Server-side receipts validation>>
-* <<receipts, App Store receipts>>
-* <<docs, Apple documentation>>
 * <<docs, Apple documentation>>
 
 [#disclaimer]
@@ -39,35 +37,50 @@ Let's talk about receipts and their validation first.
 In this article, by App Store receipt (or just receipt) I mean a piece of information about a purchase made from within the app.
 Thus, by employing receipt validation techniques you can authenticate purchased content.
 
-There are two receipt validation techniques: on-device receipt validation and server-side receipt validation.
+There are https://developer.apple.com/in-app-purchase[four types] of purchaseable content:
+
+ * Consumables
+ * Non-consumables
+ * Auto-renewable subscriptions
+ * Non-renewing subscriptions
+
+There are two receipt validation techniques: on-device and server-side.
 A developer should https://developer.apple.com/documentation/storekit/in-app_purchase/choosing_a_receipt_validation_technique[compare both approaches] and determine the best fit his app.
 He can also choose to implement both.
+In short: server-side validation is more secure and provides more features.
 
-I'll be talking solely about server-side receipt validation in this article.
+I'll be talking solely about a server-side receipt validation in this article.
 
-From the server-side point of view, a receipt is just a long string, like:
+From a server-side point of view, a receipt is just a long string, like:
 
 [source]
 ----
 MIIcSAYJKoZIhvcNAQcCoIIcOTCCHDUCAQExCzAJBgUrDgMCGgUAMIIL+QYJKoZIhvcNAQcBoIIL6gS
-…9622 symbols skipped…
+…≈9622 symbols skipped…
 J8rloluUN2JvNwiFzPY0eAtCToLpBfGdL2I3ymDFJWiQbCuuNRa/PfGBFpMc0PGSqyQ0C5GFULTDVU=
 ----
 
+Let's look at the server-side receipt validation process:
+
 {{< figure src="//storage.googleapis.com/madheadme-static/posts/appstore-receipts-validaton/001.png" class="align-center">}}
 
-### What & Why?
-### 2 types of recipes, why it's important
+So, basically, to validate the purchase on your server, you have to:
 
-[#receipts]
-## App Store receipts
+ . Pass the receipt from your app to your server
+ . Pass the receipt to the Apple for the validation
+ . Check the response
+ . Make the content available to the user if the purchase was successful
+
+Sounds like a child's play?
+Well…
 
 [#docs]
 ## Apple documentation
 
 ### Docs
 
-
+### What & Why?
+### 2 types of recipes, why it's important
 HTML instead of JSON
 How to detekt new transactions / groups
 Incrementing transaction ids (bug?)
