@@ -7,8 +7,8 @@ tags:
 ---
 
 Some time ago, I wrote a link:../appstore-receipts-validator-j[blogpost] about my https://gitlab.com/madhead/appstore-receipts-validator-j[Java library for App Store receipts validation].
-Recently, I was contacted by another developer working on a server-side App Store receipts validation.
-He found my article and then contacted me in Telegram, we had a pretty long conversation and discussed a lot of nuances.
+Recently, another developer working on a server-side App Store receipts validation contacted me after finding my article.
+We had a pretty long conversation and discussed a lot of nuances.
 I never thought that receipt validation could be of some interest, but after that conversation I realized how much pain I have expirienced and how much intricacies are there in this task.
 
 So here it is: everything I wish I knew about server-side App Store receipts validation before I did it for the first time.
@@ -53,6 +53,8 @@ MIIcSAYJKoZIhvcNAQcCoIIcOTCCHDUCAQExCzAJBgUrDgMCGgUAMIIL+QYJKoZIhvcNAQcBoIIL6gS
 …9622 symbols skipped…
 J8rloluUN2JvNwiFzPY0eAtCToLpBfGdL2I3ymDFJWiQbCuuNRa/PfGBFpMc0PGSqyQ0C5GFULTDVU=
 ----
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/appstore-receipts-validaton/001.png" class="align-center">}}
 
 ### What & Why?
 ### 2 types of recipes, why it's important
