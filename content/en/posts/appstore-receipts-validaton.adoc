@@ -140,6 +140,33 @@ Here is a https://stackoverflow.com/q/61566293/750510[StackOverflow question] by
 
 You may ask: why the SLA is important?
 
+[#sandbox]
+## Sadnbox
+
+https://developer.apple.com/documentation/appstorereceipts/verifyreceipt
+Verify your receipt first with the production URL; proceed to verify with the sandbox URL if you receive a 21007 status code. Following this approach ensures that you do not have to switch between URLs while your application is tested, reviewed by App Review, or live in the App Store.
+
+useless sandbox: cannot check certain flows
+
+[#parsing]
+## Parsing the receipt
+
+How to detekt new transactions / groups -- they are all in array, how to detekt new?
+No money in /verifyReceipt
+Fastlane / spaceship
+
+[#s2s]
+## S2S
+
+S2S 200 / 204
+Useless S2S for checking expired subscriptions 
+2 types of recipes, why it's important
+
+[#quirks]
+## Quirks / Bugs
+
+Incrementing transaction ids (bug?)
+
 [#tldr]
 ## TLDR
 
@@ -147,15 +174,4 @@ You may ask: why the SLA is important?
  . The existing documentation is vague and lacks of examples.
  . No SLA is defined for `/verifyReceipt` endpoint.
 
-
-
-### What & Why?
-### 2 types of recipes, why it's important
-HTML instead of JSON
-How to detekt new transactions / groups
-Incrementing transaction ids (bug?)
-How to check expired subscriptions / Useless S2S
 https://medium.com/revenuecat-blog/ios-subscriptions-are-hard-d9b29c74e96f
-204 S2S
-No money in /verifyReceipt
-Fastlane / spaceship
