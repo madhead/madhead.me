@@ -9,7 +9,7 @@ tags:
 Some time ago, I wrote a link:../appstore-receipts-validator-j[blogpost] about my https://gitlab.com/madhead/appstore-receipts-validator-j[Java library for App Store receipts validation].
 Recently, another developer working on a server-side App Store receipts validation contacted me after reading that article.
 We had a pretty long conversation and discussed a lot of nuances.
-I never thought that receipt validation could be of some interest, but after that conversation I realized how much pain I have expirienced and how much intricacies are there in this task.
+I never thought that receipt validation could be of some interest, but after that conversation I realized how much pain I have expirienced and how much intricacies there are in this task.
 
 So here it is: everything I wish I knew about server-side App Store receipts validation before I did it for the first time.
 
@@ -20,6 +20,8 @@ So here it is: everything I wish I knew about server-side App Store receipts val
 * <<disclaimer, Disclaimer>>
 * <<intro, Server-side receipts validation>>
 * <<docs, Apple documentation>>
+* <<sla, SLA>>
+* <<tldr, TLDR>>
 
 [#disclaimer]
 ## Disclaimer
@@ -28,6 +30,7 @@ I am not an expert and I may be wrong.
 I may misunderstood some concepts.
 Everything I say here is my personal opinion based on my personal expirience.
 The information I provide here may be obsolete, always keep in mind the https://developer.apple.com/documentation/storekit/in-app_purchase/validating_receipts_with_the_app_store[official] https://developer.apple.com/documentation/appstorereceipts[documentation].
+If you have something to add, don't hesistate to leave a comment below!
 
 [#intro]
 ## Server-side receipts validation
@@ -77,7 +80,74 @@ Well…
 [#docs]
 ## Apple documentation
 
-### Docs
+Probably the first thing you want to do is to read some documentation.
+The best place to start is https://developer.apple.com/documentation/storekit[StoreKit documentation], particularly its section about https://developer.apple.com/documentation/appstorereceipts[App Store Receipts].
+
+However, while you search for the information, like descriptions of receipt fields, you may encounter an old but still available https://developer.apple.com/library/archive/releasenotes/General/ValidateAppStoreReceipt/Chapters/ReceiptFields.html#//apple_ref/doc/uid/TP40010573-CH106-SW12[pages] at Apple's documentation archive.
+These pages are obsolete and you should not rely on them!
+Why doesn't Apple just remove them from the Internet?
+
+**Always check that you're using actual documentation**.
+
+Ok, you're using the most recent documentation.
+You expect some formal schema (like https://swagger.io/specification[OpenAPI]) for the response objects to minimize the ambiguity to exist, don't you?
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/appstore-receipts-validaton/002.png" class="align-center">}}
+
+Be ready to read vague descriptions, like https://developer.apple.com/documentation/appstorereceipts/responsebody/pending_renewal_info[this]:
+
+> `grace_period_expires_date` string
+>
+> The time at which the grace period for subscription renewals expires, in a date-time format similar to the ISO 8601.
+
+What do they mean by __similar__?
+It's either ISO 8601, or some other format, and we, developers, need to know it in advance to be able to parse it!
+
+https://developer.apple.com/documentation/appstorereceipts/responsebody/latest_receipt_info[Another] example of vagueness:
+
+> `is_in_intro_offer_period` string
+>
+> An indicator of whether an auto-renewable subscription is in the introductory price period. See https://developer.apple.com/documentation/appstorereceipts/is_in_intro_offer_period[`is_in_intro_offer_period`] for more information.
+> 
+> Possible values: true, false
+
+So is it a string with values ``"true"`` and ``"false"``, or is it actually a boolean with values `true` and `false`?
+
+All those and similar questions could be resolved with a few sound examples.
+Alas, there are no examples at all.
+
+**The existing documentation is vague and lacks of examples**.
+
+[#sla]
+## SLA
+
+Ok, you've send some receipts to Apple servers and got some responses.
+Let's talk about the https://en.wikipedia.org/wiki/Service-level_agreement[SLA] of that `/verifyReceipt` endpoint.
+
+Long story short: **there is no SLA defined for `/verifyReceipt` endpoint**.
+
+In case of any troubles with the API, you can, probably, check the status at https://developer.apple.com/system-status[developer system status page], but from my expirience it is useless.
+Once, I've faced an issue with the production receipt verification endpoint — `\https://buy.itunes.apple.com/verifyReceipt`.
+It was returning HTML payloads instead of JSON, something like a default 404 or 500 page.
+Obviously, a problem on App Store's side.
+I've been observing the issue for about 15 minutes in production and the system status page was all green during that time.
+Moreover, I wrote an e-mail to the App Store's technical support team.
+They replied about a week (!!!) later, and the reply was useless (not saying it was not actual anymore).
+
+Unluky me?
+Unlucky, but not alone.
+Here is a https://stackoverflow.com/q/61566293/750510[StackOverflow question] by another poor guy facing a similar issue (probably the same that I did).
+
+You may ask: why the SLA is important?
+
+[#tldr]
+## TLDR
+
+ . Always check that you're using actual documentation.
+ . The existing documentation is vague and lacks of examples.
+ . No SLA is defined for `/verifyReceipt` endpoint.
+
+
 
 ### What & Why?
 ### 2 types of recipes, why it's important
