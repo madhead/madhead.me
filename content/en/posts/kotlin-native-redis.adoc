@@ -5,6 +5,7 @@ tags:
   - kotlin
   - kotlin/native
   - redis
+  - pet projects
 ---
 
 Those of you who have some experience with Redis may know that it is not just a simple cache or a plain key-value store, but actually a data structures server, supporting different kinds of values.
