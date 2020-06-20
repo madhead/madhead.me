@@ -50,7 +50,7 @@ Here, at the level of integration testing, come tools like https://github.com/lo
 The idea is to mock an AWS service using a low-cost, disposable (in-memory) implementation and use it to test your code.
 Localstack already supports two dozen of AWS services and the list is growing!
 
-You only have to get the clients in your test classes, and https://gitlab.com/madhead/aws-junit5[`aws-junit5`] will help you do with a minimal effor:
+You only have to get the clients in your test classes, and https://gitlab.com/madhead/aws-junit5[`aws-junit5`] will help you do that with a minimal effort:
 
 [source, kotlin]
 ----
