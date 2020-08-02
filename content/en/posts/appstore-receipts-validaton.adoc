@@ -1,6 +1,6 @@
 ---
 title: 'Fear and loathing of server-side App Store receipts validation'
-date: 2020-06-03T09:00:00+03:00
+date: 2020-08-02T09:00:00+03:00
 tags:
   - app store
   - pain
@@ -21,6 +21,7 @@ So here it is: everything I wish I knew about server-side App Store receipts val
 * <<intro, Server-side receipts validation>>
 * <<docs, Apple documentation>>
 * <<sla, SLA>>
+* <<parsing, Parsing the response>>
 * <<tldr, TLDR>>
 
 [#disclaimer]
@@ -54,7 +55,7 @@ In short: server-side validation is more secure and provides more features.
 
 I'll be talking solely about a server-side receipt validation in this article.
 
-From a server-side point of view, a receipt is just a long string, like:
+From that point of view, a receipt is just a long string, like:
 
 [source]
 ----
@@ -70,7 +71,7 @@ Let's look at the server-side receipt validation process:
 So, basically, to validate the purchase on your server, you have to:
 
  . Pass the receipt from your app to your server
- . Pass the receipt to the Apple for the validation
+ . Pass the receipt to Apple for the validation
  . Check the response
  . Make the content available to the user if the purchase was successful
 
@@ -116,7 +117,7 @@ So is it a string with values ``"true"`` and ``"false"``, or is it actually a bo
 All those and similar questions could be resolved with a few sound examples.
 Alas, there are no examples at all.
 
-**The existing documentation is vague and lacks of examples**.
+**The existing documentation is vague and lacks of good examples**.
 
 [#sla]
 ## SLA
@@ -138,22 +139,214 @@ Unluky me?
 Unlucky, but not alone.
 Here is a https://stackoverflow.com/q/61566293/750510[StackOverflow question] by another poor guy facing a similar issue (probably the same that I did).
 
-You may ask: why the SLA is important?
+Let me finish this section with a quote https://cloud.google.com/blog/products/gcp/sre-fundamentals-slis-slas-and-slos[from Google's SRE guides] that emphasizes the importance of having a well-defined SLA (actually, it's about SLO, but SLA is normally a looser objective than the SLO and depends on it):
+
+[quote]
+____
+SRE begins with the idea that a prerequisite to success is availability.
+**A system that is unavailable cannot perform its function and will fail by default.
+Availability, in SRE terms, defines whether a system is able to fulfill its intended function at a point in time.**
+In addition to being used as a reporting tool, the historical availability measurement can also describe the probability that your system will perform as expected in the future.
+____
+
+Without an SLA defined by App Store, you cannot predict your own service availability.
+You have no ground for your complains in case if something fails at App Store.
+Their service is provided "as is", and this is not how serious business is done, IMO.
+
+[#parsing]
+## Parsing the response
+
+Next thing to do after getting a successful response from `/verifyreceipt` is parsing it.
+
+And it's a big deal, especially if you're using a statically typed language like Kotlin or Java and want to use classes instead of `Map<String, Object>`.
+As I've mentioned above, there is no formal schema defined for App Store's payloads, so you have to write https://en.wikipedia.org/wiki/Data_transfer_object[DTOs] and deserialization logic yourself.
+Or use my library for JVM, but that's link:../appstore-receipts-validator-j[another story].
+
+Imagine there is no library and you're parsing the payloads manually.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/appstore-receipts-validaton/003.png" class="align-center">}}
+
+https://stackoverflow.com/a/33961925/750510[There are] actually two kinds of receipts: deprecated single transaction receipts and grand unified receipts with multiple transactions.
+Why should you even bother with single transaction receipts when they are deprecated?
+Well, because Apple still uses those receipts in their <<s2s, Server-to-Server Notifications>>, but I'll talk about them later.
+
+Here is how a deprecated single transaction receipt looks like:
+
+[source]
+----
+ewoJInNpZ25hdHVyZSIgPSAiQXdsWWpJdkVvdGE0NWRWMllQNk9CU3I1WHoyK3F0T3l3bnc3Y3JOMVl
+…
+mpMMGROVkNJN0NuMD0iOwoJInBvZCIgPSAiMTgiOwoJInNpZ25pbmctc3RhdHVzIiA9ICIwIjsKfQ==
+----
+
+And here is the response you'll get after its verification (I've mangled some data for security reasons):
+
+[source, json]
+----
+{
+    "auto_renew_status": 0,
+    "status": 0,
+    "auto_renew_product_id": "a.b.c.premium.monthly.24.99",
+    "receipt": {
+        "original_purchase_date_pst": "2020-07-22 13:18:22 America/Los_Angeles",
+        "quantity": "1",
+        "unique_vendor_identifier": "X999XX9X-X9XX-9999-9999-XXX9999X9XXX",
+        "bvrs": "9999",
+        "expires_date_formatted": "2020-07-25 20:18:22 Etc/GMT",
+        "is_in_intro_offer_period": "false",
+        "purchase_date_ms": "1595449102000",
+        "expires_date_formatted_pst": "2020-07-25 13:18:22 America/Los_Angeles",
+        "is_trial_period": "true",
+        "item_id": "9999999999",
+        "unique_identifier": "999x9x9x99x99999x9x9xx99999999xxxxx99xxx",
+        "original_transaction_id": "999999999999999",
+        "subscription_group_identifier": "99999999",
+        "app_item_id": "9999999999",
+        "transaction_id": "999999999999999",
+        "web_order_line_item_id": "999999999999999",
+        "version_external_identifier": "999999999",
+        "purchase_date": "2020-07-22 20:18:22 Etc/GMT",
+        "product_id": "a.b.c.premium.monthly.24.99",
+        "expires_date": "1595708302000",
+        "original_purchase_date": "2020-07-22 20:18:22 Etc/GMT",
+        "purchase_date_pst": "2020-07-22 13:18:22 America/Los_Angeles",
+        "bid": "a.b.c",
+        "original_purchase_date_ms": "1595449102000"
+    },
+    "latest_receipt_info": {
+        "original_purchase_date_pst": "2020-07-22 13:18:22 America/Los_Angeles",
+        "quantity": "1",
+        "unique_vendor_identifier": "X999XX9X-X9XX-9999-9999-XXX9999X9XXX",
+        "bvrs": "9999",
+        "expires_date_formatted": "2020-07-25 20:18:22 Etc/GMT",
+        "is_in_intro_offer_period": "false",
+        "purchase_date_ms": "1595449102000",
+        "expires_date_formatted_pst": "2020-07-25 13:18:22 America/Los_Angeles",
+        "is_trial_period": "true",
+        "item_id": "9999999999",
+        "unique_identifier": "999x9x9x99x99999x9x9xx99999999xxxxx99xxx",
+        "original_transaction_id": "999999999999999",
+        "subscription_group_identifier": "99999999",
+        "app_item_id": "9999999999",
+        "transaction_id": "999999999999999",
+        "web_order_line_item_id": "999999999999999",
+        "purchase_date": "2020-07-22 20:18:22 Etc/GMT",
+        "product_id": "a.b.c.premium.monthly.24.99",
+        "expires_date": "1595708302000",
+        "original_purchase_date": "2020-07-22 20:18:22 Etc/GMT",
+        "purchase_date_pst": "2020-07-22 13:18:22 America/Los_Angeles",
+        "bid": "a.b.c",
+        "original_purchase_date_ms": "1595449102000"
+    },
+    "latest_receipt": "ewoJInNpZ2 … IwIjsKfQ=="
+}
+----
+
+And now the grand unified receipt and its validation result:
+
+[source]
+----
+MIIULAYJKoZIhvcNAQcCoIIUHTCCFBkCAQExCzAJBgUrDgMCGgUAMIIDzQYJKoZIhvcNAQcBoIIDvgS
+…
+xSfRIlSJ+g+WzQcKFbkW9fucSu7XfGJhbvbw9M4itAK2/xduPQPht2OQx7NIJcPcVXpQAcJzICvI/8=
+----
+
+[source, json]
+----
+{
+    "status": 0,
+    "environment": "Production",
+    "receipt": {
+        "receipt_type": "Production",
+        "adam_id": 9999999999,
+        "app_item_id": 9999999999,
+        "bundle_id": "a.b.c",
+        "application_version": "9999",
+        "download_id": 99999999999999,
+        "version_external_identifier": 999999999,
+        "receipt_creation_date": "2018-04-15 14:48:20 Etc/GMT",
+        "receipt_creation_date_ms": "1523803700000",
+        "receipt_creation_date_pst": "2018-04-15 07:48:20 America/Los_Angeles",
+        "request_date": "2020-07-22 20:15:24 Etc/GMT",
+        "request_date_ms": "1595448924349",
+        "request_date_pst": "2020-07-22 13:15:24 America/Los_Angeles",
+        "original_purchase_date": "2018-01-29 07:11:04 Etc/GMT",
+        "original_purchase_date_ms": "1517209864000",
+        "original_purchase_date_pst": "2018-01-28 23:11:04 America/Los_Angeles",
+        "original_application_version": "8888",
+        "in_app": [
+            {
+                "quantity": "1",
+                "product_id": "a.b.c.premium.monthly.24.99",
+                "transaction_id": "999999999999999",
+                "original_transaction_id": "999999999999999",
+                "purchase_date": "2018-04-15 14:48:19 Etc/GMT",
+                "purchase_date_ms": "1523803699000",
+                "purchase_date_pst": "2018-04-15 07:48:19 America/Los_Angeles",
+                "original_purchase_date": "2018-04-15 14:48:20 Etc/GMT",
+                "original_purchase_date_ms": "1523803700000",
+                "original_purchase_date_pst": "2018-04-15 07:48:20 America/Los_Angeles",
+                "expires_date": "2019-04-15 14:48:19 Etc/GMT",
+                "expires_date_ms": "1555339699000",
+                "expires_date_pst": "2019-04-15 07:48:19 America/Los_Angeles",
+                "web_order_line_item_id": "999999999999999",
+                "is_trial_period": "false",
+                "is_in_intro_offer_period": "false"
+            }
+        ]
+    },
+    "latest_receipt_info": [
+        {
+            "quantity": "1",
+            "product_id": "a.b.c.premium.monthly.24.99",
+            "transaction_id": "999999999999999",
+            "original_transaction_id": "999999999999999",
+            "purchase_date": "2020-04-15 14:48:19 Etc/GMT",
+            "purchase_date_ms": "1586962099000",
+            "purchase_date_pst": "2020-04-15 07:48:19 America/Los_Angeles",
+            "original_purchase_date": "2018-04-15 14:48:20 Etc/GMT",
+            "original_purchase_date_ms": "1523803700000",
+            "original_purchase_date_pst": "2018-04-15 07:48:20 America/Los_Angeles",
+            "expires_date": "2021-04-15 14:48:19 Etc/GMT",
+            "expires_date_ms": "1618498099000",
+            "expires_date_pst": "2021-04-15 07:48:19 America/Los_Angeles",
+            "web_order_line_item_id": "999999999999999",
+            "is_trial_period": "false",
+            "is_in_intro_offer_period": "false",
+            "subscription_group_identifier": "99999999"
+        }
+    ],
+    "latest_receipt": "MIIUPQYJKo … U13wS5iQ==",
+    "pending_renewal_info": [
+        {
+            "auto_renew_product_id": "a.b.c.premium.monthly.24.99",
+            "original_transaction_id": "999999999999999",
+            "product_id": "a.b.c.premium.monthly.24.99",
+            "auto_renew_status": "0"
+        }
+    ]
+}
+----
+
+Even with the receipts themselves seem similar (they are both strings, one starting with `ewo…` and the other with `MII…`) the response's JSON structure differs a lot.
+For example, `latest_receipt_info` is an object for a single transaction receipt and it is an array for grand unified receipt.
+Grand unified receipt contains `pending_renewal_info` object, and single transaction receipt does not.
+Grand unified receipt's `receipt` object contains an array of in-apps, and single transaction receipt does not.
+There are other differences not to mention.
+
+How to detekt new transactions / groups -- they are all in array, how to detekt new?
+No money in /verifyReceipt
+Fastlane / spaceship
+
 
 [#sandbox]
-## Sadnbox
+## Sandbox
 
 https://developer.apple.com/documentation/appstorereceipts/verifyreceipt
 Verify your receipt first with the production URL; proceed to verify with the sandbox URL if you receive a 21007 status code. Following this approach ensures that you do not have to switch between URLs while your application is tested, reviewed by App Review, or live in the App Store.
 
 useless sandbox: cannot check certain flows
 
-[#parsing]
-## Parsing the receipt
-
-How to detekt new transactions / groups -- they are all in array, how to detekt new?
-No money in /verifyReceipt
-Fastlane / spaceship
 
 [#s2s]
 ## S2S
