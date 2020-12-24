@@ -1,0 +1,44 @@
+---
+title: 'Graphviz @ Docker'
+date: 2020-12-24T22:05:00+03:00
+tags:
+  - docker
+  - graphviz
+  - dot
+  - pet projects
+---
+
+One more article about my Docker images.
+Graphviz doesn't seem to have an official Docker image, so I've created https://hub.docker.com/repository/docker/madhead/graphviz[my own].
+
+<!--more-->
+
+The usage (in, e.g. https://docs.github.com/en/free-pro-team@latest/actions[GitHub Actions]) is simple:
+
+.workflow.yml
+[source, yml]
+----
+name: 'Render something'
+
+on:
+  - push
+
+jobs:
+  roadmap:
+    name: 'file.dot'
+    runs-on: ubuntu-latest
+    container:
+      image: madhead/graphviz:latest
+    steps:
+      - run: dot -V
+      - uses: actions/checkout@v2
+      - run: >
+          dot
+          -Tsvg
+          -o dist/file.svg
+          src/file.dot
+----
+
+You'll get your `src/file.dot` rendered to `dist/file.svg`.
+
+Have fun with it!
