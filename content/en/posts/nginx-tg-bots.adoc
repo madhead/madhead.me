@@ -103,4 +103,4 @@ Finally, if you want to generate a self-signed certificate with Ansible as well,
 This is basically the same as `openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.crt -subj "/O=CoolBot/CN=${your_public_ip}"` command found on the Internet.
 These Ansible tasks are idempotent, i.e. they won't actually change the certificate if executed multiple times unless one of their parameters changes.
 
-Now go and run some bots for cheap in https://www.oracle.com/cloud/free/#always-free[Oracle's "Always Free" VMs]!
+Now go and run some bots for cheap on https://www.oracle.com/cloud/free/#always-free[Oracle's "Always Free" VMs]!
