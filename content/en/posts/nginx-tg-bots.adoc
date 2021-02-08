@@ -1,0 +1,106 @@
+---
+title: Hosting multiple Telegram bots with NGINX, self-signed certificates and Ansible
+date: 2021-02-08T21:00:00+03:00
+tags:
+  - telegram
+  - ansible
+---
+
+Imagine you have a few cool ideas for https://core.telegram.org/bots[Telegram bots].
+Bots have two options of communicating with Telegram servers: either by polling the events by using https://core.telegram.org/bots/api#getupdates[`getUpdates`] or by registering a https://core.telegram.org/bots/api#setwebhook[webhook] and receiving the updates as HTTPS POST requests.
+But who the heck uses polling today?
+Right, nobody does that, and webhooks are the option.
+
+And here be dragons.
+
+<!--more-->
+
+[quote, 'https://core.telegram.org/bots/webhooks[Marvin\'s Marvellous Guide to All Things Webhook]']
+____
+A webhook needs an open port on your server.
+We currently support the following ports: 443, 80, 88 and 8443.
+Other ports are not supported and will not work.
+Make sure your bot is running on one of those supported ports, and that the bot is reachable via its public address.
+
+A webhook requires SSL/TLS encryption, no matter which port is used.
+It's not possible to use a plain-text HTTP webhook.
+You shouldn't want to either, for the sake of your bot and users.
+____
+
+It seems that you can only run four bots at max using a single server because they will need to https://stackoverflow.com/q/1694144/750510[have different ports] and Telegram accepts only four port values.
+
+But what if you want to host a dozen of different bots on a single server?
+And you'll need TLS.
+Managing certificates for every bot would be a headache.
+
+Obviously, you should use a https://en.wikipedia.org/wiki/Reverse_proxy[reverse proxy].
+This way you'll need to open only one port, let's say 443, and have only one certificate for the host.
+The proxy may then route the requests based on their locations.
+And when you have a new bot — just update the proxy config.
+
+What is the best-known and beloved reverse proxy?
+Probably, https://www.nginx.com[NGINX].
+
+What is the best-known and beloved configuration management tool, lightweight enough to be used even in pet projects?
+Probably, https://www.ansible.com/[Ansible].
+
+So here is the trick to make an Ansible-friendly NGINX config that is easily extendable, i.e. allows you to add new bots independently as they appear.
+
+[source, yml]
+----
+# {{ ansible_managed }}
+
+server {
+    listen              443 ssl;
+    server_name         {{ public_ip }};
+    ssl_certificate     /etc/pki/cert.crt;
+    ssl_certificate_key /etc/pki/key.pem;
+
+    include /etc/nginx/conf.d/*.locations;
+}
+----
+
+Now, for every new bot you want to run, create a file with `.locations` extension in `/etc/nginx/conf.d`, with a content like this:
+
+[source, yml]
+----
+# {{ ansible_managed }}
+
+location /{{ bot.telegram.token }} {
+    proxy_set_header Host $http_host;
+    proxy_redirect   off;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Scheme $scheme;
+    proxy_pass       http://0.0.0.0:{{ bot.port }}/{{ bot.telegram.token }};
+}
+----
+
+These files will be included in the "main" NGINX config automatically using the `include` directive!
+Now you can deploy your bots independently by simply managing their own `location` blocks without touching the main NGINX configuration.
+
+Finally, if you want to generate a self-signed certificate with Ansible as well, here is the interesting part of the config:
+
+[source, yml]
+----
+- community.crypto.openssl_privatekey:
+    type: RSA
+    size: 4096
+    path: /etc/pki/key.pem
+- community.crypto.openssl_csr:
+    subject:
+      O: CoolBot
+      CN: '{{ public_ip }}'
+    privatekey_path: /etc/pki/key.pem
+    path: /etc/pki/cert.csr
+- community.crypto.x509_certificate:
+    privatekey_path: /etc/pki/key.pem
+    csr_path: /etc/pki/cert.csr
+    provider: selfsigned
+    path: /etc/pki/cert.crt
+----
+
+This is basically the same as `openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.crt -subj "/O=CoolBot/CN=${your_public_ip}"` command found on the Internet.
+These Ansible tasks are idempotent, i.e. they won't actually change the certificate if executed multiple times unless one of their parameters changes.
+
+Now go and run some bots for cheap in https://www.oracle.com/cloud/free/#always-free[Oracle's "Always Free" VMs]!
