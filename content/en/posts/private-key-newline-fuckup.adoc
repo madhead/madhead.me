@@ -1,0 +1,82 @@
+---
+title: 'How I fucked up with a private key and newlines'
+date: 2021-02-09T23:00:00+03:00
+tags:
+  - ssh
+  - fuckup
+---
+
+A short story about wasting a day on a single newline at the end of a private key.
+
+<!--more-->
+
+I was trying to set up a CI/CD pipeline with https://github.com/features/actions[GitHub Actions], more specifically — configure a deployment via SSH.
+Generally, to connect to a server with SSH one needs a key pair: the public key goes to the server's `.ssh/authorized_keys` and the private key is used to connect to the server.
+
+So, I've generated a key pair with a command like `ssh-keygen -b 4096`.
+
+I've added the public key to the target server and tried to connect with a new key — __everything was working on my machine__.
+
+Then I had to put the private key somewhere on GitHub so I could use it in a workflow.
+GitHub doesn't support files as secrets, only strings.
+So, I've copied my private key and pasted it as a secret.
+
+Like that:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/private-key-newline-fuckup/001.png" class="align-center" >}}
+
+Note that cursor at the end of the last line of the secret.
+
+Then I used some https://stackoverflow.com/a/49418406/750510[black magic] to save this secret to a file:
+
+[source, yml]
+----
+- run: printf %s "$DEPLOYMENT_KEY" > ~/.ssh/deployment_key
+  shell: bash
+  env:
+    DEPLOYMENT_KEY: ${{ secrets.DEPLOYMENT_KEY }}
+- run: chmod 600 ~/.ssh/deployment_key
+----
+
+…spending like an hour learning the importance of double quotes…
+
+Finally, I got my key in `~/.ssh/deployment_key` and it looked fine.
+To check that, I've https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts[stored it as an artifact], downloaded that artifact at the end of the workflow, and checked the key manually.
+
+But when I tried to use that key with Ansible to connect to a server I got a really strange error message:
+
+[source]
+----
+fatal: [42.42.42.42]: UNREACHABLE! => {"changed": false, "msg": "Failed to connect to the host via ssh: Warning: Permanently added '42.42.42.42' (ECDSA) to the list of known hosts.\r\nLoad key \"/home/runner/.ssh/deployment_key\": invalid format\r\nubuntu@42.42.42.42: Permission denied (publickey).", "unreachable": true}
+----
+
+I was really surprised to see that "invalid format" and "permission denied". And the shit hit the fan.
+
+I've increased Ansible's logging to the most verbose level, but it wasn't informative, just more text with the same message at the end.
+
+I've googled those errors and double-checked https://serverfault.com/a/854212/151519[the number of hyphens] in "BEGIN OPENSSH PRIVATE KEY" line.
+
+I've generated a new key a few times.
+
+I've tried RSA, ECDSA, and ED25519 algorithms.
+
+I've ensured https://stackoverflow.com/a/9270753/750510[the permissions] on the key are `0600`, and even tried `0400`.
+
+No luck.
+
+At the very bottom of my despair, I ended up reading an article about https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail[PEM file format] on Wikipedia, trying to find the answer.
+From there I've jumped to the https://tools.ietf.org/html/rfc7468[RFC 7468] and tried to understand its https://en.wikipedia.org/wiki/Backus%E2%80%93Naur_form[BNF] description.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/private-key-newline-fuckup/002.png" class="align-center" >}}
+
+I've checked the https://tools.ietf.org/html/rfc1421[RFC 1421] and it mentioned CRLF at the end of the `-----END BLA-BLA-BLA-----` line.
+
+What a surprise!
+
+I've updated the secret on GitHub one last time, making sure that there is a newline and the end of it.
+
+And it fixed the error, the deployment proceeded. 😌
+
+Let me end this rant with a https://youtu.be/zNMpSVorNr0?t=26[scene] from the "Atomic Blonde", where David Percival expresses his love to Berlin, moments before being mortally shot. 🤬
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/private-key-newline-fuckup/003.png" class="align-center" >}}
