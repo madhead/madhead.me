@@ -5,6 +5,7 @@ tags:
   - java
   - kotlin
   - fuckup
+  - rant
 ---
 
 A short story about a newbie's mistake I've made recently.

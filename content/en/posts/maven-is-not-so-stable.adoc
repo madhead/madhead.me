@@ -4,6 +4,7 @@ date: 2018-08-19T00:34:00+03:00
 tags:
   - maven
   - gradle
+  - rant
 ---
 
 Sometimes I'm trying to show others that there is a better alternative to Maven: Gradle.

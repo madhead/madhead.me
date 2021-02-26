@@ -4,6 +4,7 @@ date: 2021-02-09T23:00:00+03:00
 tags:
   - ssh
   - fuckup
+  - rant
 ---
 
 A short story about wasting a day on a single newline at the end of a private key.
