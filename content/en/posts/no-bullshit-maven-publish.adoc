@@ -1,0 +1,319 @@
+---
+title: No-bullshit guide on publishing your Gradle projects to Maven Central
+date: 2021-02-27T18:00:00+03:00
+tags:
+  - gradle
+  - maven
+  - rant
+---
+
+You've heard https://jfrog.com/blog/into-the-sunset-bintray-jcenter-gocenter-and-chartcenter[the news], haven't you?
+JFrog is closing JCenter — probably the best Maven-compatible repository ever.
+It was kind of a "default" in Gradle — a drop-in replacement for Maven Central Repository — for years.
+Plus it hosted some extra artifacts from the projects that decided to not deploy into Central (and now I understand why).
+With its own Gradle plugin, JCenter was drop-dead easy to publish: just a dozen of config lines, a single task invocation — and your library is available to everybody.
+
+It was great.
+Good night, sweet prince.
+
+It's time to move your projects to Maven Central Repository, so I've gathered some info for you below to minimize the pain.
+
+<!--more-->
+
+== OSSRH
+
+The first thing to know: there is no such thing as "Maven Central Repository".
+Just like your company's https://jfrog.com/artifactory[Artifactory] (btw, another tool by JFrog), it's a facade, a proxy for multiple distributed repositories who actually store the artifacts.
+So, you don't publish directly to the Central, you publish to one of those repositories and your artifacts appears in the Central.
+
+https://central.sonatype.org/pages/ossrh-guide.html[Sonatype OSSRH] (OSS Repository Hosting) is such a repository accepting artifacts from individuals and companies who make — you got it! — open-source software.
+
+Now, when you know that, go and **create an account in https://issues.sonatype.org[their Jira]**.
+You like Jira, don't you? 🙂
+
+Then you'll need to **request for a namespace for your project in the OSSRH**.
+Go and https://issues.sonatype.org/secure/CreateIssue.jspa?issuetype=21&pid=10134[do that].
+If you want to publish a single project — its name is the same as your project's `groupId`.
+If you want to publish multiple projects — use something "wider": it will allow you to publish more projects later without repeating the request.
+Use your domain, if you have one, as a namespace, or go with something like `com.github.${yourGitHubUsername}`, or `io.github.${yourGitHubUsername}`.
+Note that when using a domain you'll need to prove the ownership, e.g. by adding a TXT record to its DNS.
+Other required details include your project's VCS URL, its site, description, and a list of users allowed to publish the artifacts.
+Your issue will be approved manually, so don't worry about missing something here: Sonatype staff is friendly and helpful.
+
+== GPG
+
+The SLA for that issue is two days but usually, they answer in a few hours.
+Let's **create a GPG key meanwhile**!
+You'll need it to sign your artifacts: signing them is mandatory for publishing to the Central, and it is one of those things making this process a lot more painful than publishing to the JCenter.
+As a bonus, using artifacts from the Central is more secure.
+You may already have a key, especially if you have set up https://docs.github.com/en/github/authenticating-to-github/about-commit-signature-verification[commit signature verification] at GitHub, but if you don't have one, or you want to use a separate key, here is a command for you:
+
+[source, bash]
+----
+gpg2 --full-generate-key
+----
+
+Follow the prompts and fill in the details: use 4096 bit RSA, set the expiration (or make the key eternal, but it's less secure), and provide your contact details.
+You'll get a message like this at the end of the process — take a note of that key ID as you'll need it further:
+
+[source]
+----
+gpg: key 96FCFD6F5122768E marked as ultimately trusted
+gpg: revocation certificate stored as '/home/madhead/.gnupg/openpgp-revocs.d/6A9624B0C6E296D3B11B170C96FCFD6F5122768E.rev'
+public and secret key created and signed.
+
+pub   rsa4096 2021-02-26 [SC] [expires: 2022-02-26]
+      6A9624B0C6E296D3B11B170C96FCFD6F5122768E
+uid                      Siarhei Krukau <siarhei.krukau@gmail.com>
+sub   rsa4096 2021-02-26 [E] [expires: 2022-02-26]
+----
+
+Now **export the public part of the key in an ASCII-armored format**:
+
+[source, bash]
+----
+gpg2 --armor --export 6A9624B0C6E296D3B11B170C96FCFD6F5122768E > key.pgp 
+----
+
+**Make sure that you've exported the public part of the key**, as now we are going to publish it online in a few places, and publishing a private part of the key is a security fiasco.
+A public key in an ASCII-armored format starts with `-----BEGIN PGP PUBLIC KEY BLOCK-----` — check your key.
+
+The next task is to **publish this public key on a few well-known https://en.wikipedia.org/wiki/Key_server_(cryptographic)[key servers]**.
+They will spread your key further between other key servers via a sync process, and you'll become "known" to the network.
+Everybody will be able to know your public key and use it to verify that an artifact is signed using its private counterpart (it will be covered in the next steps).
+That's basically how public and private keys work to achieve some degree of trust and security.
+
+I suggest you to use these key servers:
+
+- https://keys.openpgp.org
+- https://keyserver.ubuntu.com
+
+Just open these pages and submit the file from the previous step.
+You may need to prove email ownership by clicking a link for some key servers, but others don't require that.
+
+== Configuring Gradle
+
+Now, while your key is being redistributed among the key servers network and your namespace on OSSRH is being created, let's **configure your Gradle build**.
+
+=== `maven-publish` plugin
+
+First, you'll need to **configure the https://docs.gradle.org/current/userguide/publishing_maven.html[`maven-publish` plugin]**.
+Assuming a multi-project build, it's something like that in the root build file:
+
+[source, kotlin]
+----
+configure(subprojects) {
+    apply<MavenPublishPlugin>()
+
+    configure<JavaPluginExtension> {
+        withJavadocJar()
+        withSourcesJar()
+    }
+
+    configure<PublishingExtension> {
+        publications {
+            val main by creating(MavenPublication::class) {
+                from(components["java"])
+
+                pom {
+                    name.set("…")
+                    description.set("…")
+                    url.set("…")
+                    licenses {
+                        license {
+                            name.set("…")
+                            url.set("…")
+                        }
+                    }
+                    developers {
+                        developer {
+                            id.set("…")
+                            name.set("…")
+                            email.set("…")
+                        }
+                    }
+                    scm {
+                        connection.set("…")
+                        developerConnection.set("…")
+                        url.set("…")
+                    }
+                }
+            }
+        }
+        repositories {
+            maven {
+                name = "OSSRH"
+                setUrl("https://oss.sonatype.org/service/local/staging/deploy/maven2")
+                credentials {
+                    username = System.getenv("OSSRH_USER") ?: return@credentials
+                    password = System.getenv("OSSRH_PASSWORD") ?: return@credentials
+                }
+            }
+        }
+    }
+}
+----
+
+What happens here is that I configure Gradle to produce Javadoc and sources JARs (disabled by default) as a part of my Java code building process and then I create a Maven publication out of the results of that build.
+This publication will include regular JAR files, containing Java classes, as well as Javadocs and sources.
+Having Javadocs and sources published along the regular JARs is another Maven Central Repository requirement, so make sure to enable it, otherwise, you'll fail the validation process.
+
+You also see a `pom` clause here with a lot of placeholders.
+I bet you know actual values for your project better than I, so it's your task to fill them.
+And again, providing these values in POMs is another stupid requirement of the Central, so you'd better set them all, otherwise, you'll fail the validation.
+
+Finally, there is a `repositories` block where I configure the OSSRH repository.
+The arguments here are self-descriptive.
+
+Configuring a single-module build would be easier: you could use `publishing` instead of `configure<PublishingExtension>` and `{empty}`maven-publish`` in the `plugins` block instead of `apply<MavenPublishPlugin>()`.
+
+If you got stuck here, check out https://github.com/madhead/aws-junit5/blob/master/build.gradle.kts[this repository], a project that I've moved to the Maven Central Repository recently, that inspired me summarizing my experience here.
+
+=== `signing` plugin
+
+Now, do you remember that GPG key and the requirement for your artifacts to be signed, don't you?
+So, the next thing to do is to **configure the signing**.
+Here is another part of the root build script that does that using a https://docs.gradle.org/current/userguide/signing_plugin.html[`signing` plugin]:
+
+[source, kotlin]
+----
+configure(subprojects) {
+    apply<SigningPlugin>()
+
+    configure<SigningExtension> {
+        val key = System.getenv("SIGNING_KEY") ?: return@configure
+        val password = System.getenv("SIGNING_PASSWORD") ?: return@configure
+        val publishing: PublishingExtension by project
+
+        useInMemoryPgpKeys(key, password)
+        sign(publishing.publications)
+    }
+}
+----
+
+Note that **to sign your artifacts you need a private key**, not a public key from the previous steps.
+But the command to get it is actually very similar, make sure not to confuse them:
+
+[source, bash]
+----
+gpg2 --armor --export-secret-keys 6A9624B0C6E296D3B11B170C96FCFD6F5122768E > key.pgp
+----
+
+Don't expose this value anywhere, except for your CI/CD service, which will be used to build, sign and publish your artifacts.
+BTW, this is a good reason to create a separate key instead of using your personal key, if you had one previously.
+
+The `signing` plugin supports `gpg-agent` and binary GPG keys as well, but ASCII-armored private keys could be passed via environment variables, like in the code above, via `useInMemoryPgpKeys`.
+It's a convenient way to use keys in CI/CD services like GitLab CI/CD or GitHub Actions, where you can just paste your ASCII-armored private key contents and password (key's passphrase) as secrets and use them without hassling with files.
+
+The `sign` clause here just refers to all the publications from the `publishing` plugin we've configured in the previous step.
+You could sign all the publications like here or choose a specific one, but here I sign everything.
+
+== Publishing the artifacts
+
+Now you should be ready to publish your artifacts to the Central.
+To check everything is fine, you could **publish your project** to the local Maven repository (`~/.m2/repository` directory), by invoking `./gradlew publishToMavenLocal`.
+Do that and test your artifacts locally before proceeding.
+Make sure you have regular JARs as well as sources and Javadocs.
+You should also be able to see `*.asc` files, generated by the `signing` plugin.
+
+By this time the ticket in Sonatype Jira you've created on the first step should be resolved.
+If not — do not proceed until it is resolved.
+
+If you think everything is good…
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/no-bullshit-maven-publish/001.png" class="align-center" >}}
+
+[source, bash]
+----
+./gradlew publish
+----
+
+You shouldn't probably invoke it locally, it's a job for your CI, but the command is the same.
+It will build the project, sign the artifacts and publish them to the OSSRH repository you've configured in the previous steps.
+
+== Releasing the artifacts
+
+When you publish your artifacts to the OSSRH they are not synced to the Central immediately.
+They are stored in a temporary "staging repository":
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/no-bullshit-maven-publish/002.png" class="align-center" >}}
+
+You have to manually "release" them every time you publish a new version, but don't worry, I'll tell you how to automate it.
+But let's do that manually, for now, to understand what happens under the hood.
+
+So, after publishing to the OSSRH you should log in to its https://oss.sonatype.org[repository manager] using the same credentials, as in Sonatype Jira.
+Now, navigate to the "Staging Repositories" on the left and choose the repository on the central panel.
+You may have more than one repository here, but probably if you don't publish multiple projects at once, you will have only one repository there.
+Check its content: it should contain all your artifacts and their signatures.
+
+If it looks fine… close it!
+I'm not joking, you should **click the "Close" button at the top to close your staging repo and proceed**.
+
+This button triggers a validation process for your project.
+It will validate your POMs for the required fields, ensure your artifacts are signed correctly using a publicly known key (that's why we published your public key) and contain Javadocs and sources.
+And you shouldn't probably try to publish a SNAPSHOT in the Central as well.
+
+Closing the staging repo will take some time.
+When it's done you'll see the status.
+Either everything is fine and you can proceed, or there will be some errors and you should drop that staging repo and repeat the process (publish and close) again.
+Did I told you that publishing in the Central is painful, didn't I?
+
+But imagine everything is fine.
+The next step is to **release the artifacts by clicking the "Release" button for your closed staging repo**.
+Only now your artifacts are in OSSRH!
+
+But not in the Central Maven Repository yet…
+
+You had to do one more thing, but only for the first time you publish a project: you have to **go back to the issue you've opened for a namespace in OSSRH and ask the person it is assigned to turn on the sync of your artifacts to the Central**.
+Successive publications will be synced automatically once the sync is turned on.
+
+It will take a few minutes for the artifacts to appear in the Central (https://repo1.maven.org/maven2) after you release them, but the search (https://search.maven.org) may be updating a few hours.
+
+Now you're done!
+Congratulations on publishing your first project to the Central Maven Repository.
+
+Do you feel there is room for improvement here?
+Don't you think it's not fun at all to manually close and release those staging repositories, do you?
+Think about it: once you passed the validations for the first time, having an automated and reproducible build, it should pass the subsequent checks if you, of course, didn't change something in that `pom` block or your key expired.
+
+There is a remedy: https://github.com/gradle-nexus/publish-plugin[Gradle Nexus Publish Plugin].
+This plugin automatically closes and releases OSSRH staging repositories whenever you publish something.
+To use it, remove the `repositories` section from the `publishing` plugin configuration of your build script (the one mentioning "OSSRH" in my example above) and add these lines to your build:
+
+[source, kotlin]
+----
+plugins {
+    id("io.github.gradle-nexus.publish-plugin").version("1.0.0")
+}
+
+nexusPublishing {
+    repositories {
+        sonatype {
+            username.set(System.getenv("OSSRH_USER") ?: return@sonatype)
+            password.set(System.getenv("OSSRH_PASSWORD") ?: return@sonatype)
+        }
+    }
+}
+----
+
+Finally, use `./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository` instead of `./gradlew publish` to publish your artifacts.
+
+Now you are awesome!
+
+== Recap
+
+Just to summarize the things and set up a TODO list to follow whenever you publish something to the Central via OSSRH, here is a checklist:
+
+- Create an account in Sonatype Jira.
+- Get your namespace in OSSRH.
+- Create a GPG key.
+- Publish the public key part of the GPG key.
+- Configure Maven publishing in Gradle.
+- Configure artifact signing in Gradle using the private key part of the GPG key.
+- Publish your artifacts to OSSRH.
+- Release staged artifacts.
+- Ensure sync between OSSRH and Central Maven Repository.
+
+If you have any troubles — refer to https://github.com/madhead/aws-junit5/blob/master/build.gradle.kts[this build script] which is _working for me_. 🙂
+
+Good luck!

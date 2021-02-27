@@ -4,6 +4,7 @@ date: 2018-08-19T01:42:00+03:00
 tags:
   - linux
   - nvidia
+  - rant
 ---
 
 Last week I've managed to accidentally break my Linux installation.
