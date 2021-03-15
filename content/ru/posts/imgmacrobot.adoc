@@ -1,0 +1,28 @@
+---
+title: ImgMacroBot
+date: 2021-03-16T09:00:00+03:00
+tags:
+  - pet project
+  - telegram
+---
+
+https://t.me/ImgMacroBot[@ImgMacroBot] — это https://core.telegram.org/bots/inline[инлайн бот] для телеги для генерации https://en.wikipedia.org/wiki/Image_macro[image macro].
+
+<!--more-->
+
+Помню старые добрые времена, когда, чтобы смешно пошутить, достаточно было наложить какую-нибудь фразу Impact'ом на картинку.
+Скучаю по тем временам и мне порой не хватает такого в Telegram.
+
+Поэтому я сделал https://t.me/ImgMacroBot[@ImgMacroBot] — бота, который может рисовать мемы по шаблонам.
+Это инлайн бот, так что использовать его можно в любом чате.
+Для этого нужно упомянуть бота с использованием понятной ему фразы.
+Например, если написать "@ImgMacroBot нельзя просто так взять и написать диссер", он сгенерит вот такую картинку для быстрой отправки в чат:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/imgmacrobot/001_ru.jpeg" class="align-center" >}}
+
+Шрифт — https://fonts.google.com/specimen/Oswald[Oswald], потому что нет свободного Impact-like шрифта с поддержкой кириллицы.
+
+Поддерживается не слишком много шаблонов, полный список можно глянуть https://github.com/madhead/ImgMacroBot#readme[в README проекта], но он будет потихоньку расти, пока я не забью.
+Если чего-то не хватает — можно https://github.com/madhead/ImgMacroBot/issues/new?assignees=madhead&labels=macro&template=macro-request.md&title=[завести issue].
+
+Спасибо за внимание.
