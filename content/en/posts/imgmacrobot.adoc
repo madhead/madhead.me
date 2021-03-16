@@ -1,0 +1,27 @@
+---
+title: ImgMacroBot
+date: 2021-03-16T09:00:00+03:00
+tags:
+  - pet project
+  - telegram
+---
+
+https://t.me/ImgMacroBot[@ImgMacroBot] is an https://core.telegram.org/bots/inline[inline] Telegram bot for https://en.wikipedia.org/wiki/Image_macro[image macros].
+
+<!--more-->
+
+I remember those good old days when to make a good joke it was sufficient to place a few words with Impact font on some image.
+I miss that in Telegram.
+
+So, I've created https://t.me/ImgMacroBot[@ImgMacroBot] — inline Telegram bot who generated image macros on the fly.
+You can use it in any conversation or group, just mention it with a recognizable phrase.
+E.g. if you write something like "@ImgMacroBot what if I told you a joke?" it will generate an image like this:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/imgmacrobot/001_en.jpeg" class="align-center" >}}
+
+The font is https://fonts.google.com/specimen/Oswald[Oswald], because I didn't find any free Impact-like with cyrillic.
+
+There list of templates is pretty short, you can find it https://github.com/madhead/ImgMacroBot#readme[in project's README], but it will be growing slowly until I drop this project completely.
+If you miss something — https://github.com/madhead/ImgMacroBot/issues/new?assignees=madhead&labels=macro&template=macro-request.md&title=[create an issue].
+
+Thank you for your attention.
