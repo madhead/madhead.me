@@ -4,6 +4,7 @@ date: 2019-07-16T09:00:00+03:00
 tags:
   - gradle
   - ci
+  - github actions
 ---
 
 https://gradle.org[Gradle] is an awesome build tool, and I am always looking forward to new versions to enjoy the latest features, performance improvements and bug fixes.
