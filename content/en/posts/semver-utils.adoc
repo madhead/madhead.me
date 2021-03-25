@@ -1,0 +1,45 @@
+---
+title: One-stop shop for working with semantic versions in your GitHub Actions workflows
+date: 2021-03-25T23:00:00+03:00
+tags:
+  - pet projects
+  - ci
+---
+
+GitHub Actions are so cool!
+
+Check out https://youtu.be/-sr9_AItFQQ[our recording] about them @ https://www.youtube.com/channel/UCFMIGfAAUXUqnnNcWpdezJQ[Ministry of Testing Abu Dhabi] if you want a quick sneak peek, but today I want to self-advertise one of the reusable Actions I made for you.
+And it wasn't hard at all, thanks to the way they work (although I'm going to link:../../tags/rant[rant] about that in future articles).
+
+<!--more-->
+
+You have heard about https://semver.org[Semantic Versioning], haven't you?
+If you are a developer you probably know a lot of libraries using Semantic Versioning.
+Chances are, you even use it for your projects.
+
+Sometimes during CI/CD in such projects, you need to take simple actions with versions: compare and parse them.
+E.g. you may want to check that a PR to the `main` branch increases the version (`$new_version` > `$old_version`) or you may want to create or update a `v$major.$minor` / `v$major` tag whenever you release your project.
+
+This is what `https://github.com/marketplace/actions/semver-utils[madhead/semver-utils]` is for!
+Just drop it into your workflow and use it for various operations with versions:
+
+[source, yml]
+----
+- uses: madhead/semver-utils@latest
+  id: version
+  with:
+    version: 1.2.3
+    compare-to: 2.1.0
+- run: |
+    echo "${{ steps.version.outputs.major }}"             # 1
+    echo "${{ steps.version.outputs.minor }}"             # 2
+    echo "${{ steps.version.outputs.patch }}"             # 3
+    echo "${{ steps.version.outputs.comparison-result }}" # <
+----
+
+Yeah, it supports only a few operations currently, but those are the ones I needed badly in other projects.
+Actions are super easy to create using TypeScript (or Docker, for more sophisticated ones), so I've made an action for myself (and others) in just one night.
+I've https://github.com/madhead/semver-utils/issues[planned] some extra features for upcoming releases, so check it out or maybe open an issue with a feature you're missing?
+I just want to know if it is useful or not.
+
+I want this action to become a one-stop shop for working with semantic versions in your GitHub Actions workflows one day!
