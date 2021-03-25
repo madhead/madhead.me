@@ -74,11 +74,11 @@ params:
     gitlab: madhead
     github: madhead
     stackoverflow: 750510
-    telegram: xXmadheadXx
+    # telegram: xXmadheadXx
     linkedin: krukaus
-    instagram: madhead_
+    instagram: m.a.d.h.e.a.d
     youtube: UCO2UZ6hUzjn9XQIdwwkcXJQ
-    twitter: madhead_
+    twitter: m_a_d_h_e_a_d
   comments:
     enable: true
   widgets:
