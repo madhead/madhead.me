@@ -1,0 +1,24 @@
+---
+title: Reading Java properties in GitHub Actions
+date: 2021-03-28T00:30:00+03:00
+tags:
+  - pet projects
+  - ci
+  - github actions
+---
+
+Have you link:../semver-utils[heard] that GitHub Actions are cool?
+
+I just want to share another action with you, that you may find useful in your Java projects.
+
+<!--more-->
+
+Java projects often use `.properties` files to store configuration.
+Personally, I hate them in favor of YML or even XML (I beg you: use XML to configure Log4j, not `.properties`), but still, I have to work with them.
+There are existing actions in the Marketplace able to parse those, but they usually use `grep` and `bash`.
+Although it may work, I think it's more robust to use special facilities, like `java.util.Properties` to read values from `.properties` files.
+
+So, I wrote a simple Kotlin program that reads Java `.properties` and wrapped it into a GitHub Action.
+This Action makes values from `.properties` available in your GitHub Actions workflows.
+
+That's all for today, just save the link: https://github.com/madhead/read-java-properties[madhead/read-java-properties], and, as always, feel free to open issues if something is not working as needed or expected.
