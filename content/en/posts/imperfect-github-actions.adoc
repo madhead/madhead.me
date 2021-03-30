@@ -9,15 +9,25 @@ tags:
 I would say that GitHub Actions are the pinnacle of evolution of CI/CD services.
 
 Although they are really fun to use in your projects, I will target another aspect in this article.
-I would like to speak about a few flaws in GitHub Actions architecture that make developing reusable Actions not as comfortable as it could be.
+I would like to speak about a few flaws in GitHub Actions architecture that make developing reusable actions not as comfortable as it could be.
 
 <!--more-->
 
+Before I start, I want to emphasize the difference between "Actions" and "actions".
+https://github.com/features/actions[GitHub Actions] is a product by GitHub, Inc.
+There is no singular form, and the word "GitHub" should not be omitted.
+If I do omit it somewhere below—it's just an accidental typo.
+And by "actions" I mean reusable building blocks comprising your workflows.
+
+== My perception of CI/CD evolution
+
 Do you remember building and testing your code with custom scripts (`make` in the best case scenario) on a PC in the darkest corner of your office, labeled with a sticker saying something like "do not shut down"?
 I know some projects still do that.
-Then we saw Jenkins, who standardised a lot of things, but the jobs were still configured manually.
-Then, the pipelines-as-code approach emerged, we saw Jenkins Pipelines and dozen of CI/CD services, like Travis and GitLab CI/CD, bloomed.
-Yeah, I know that Travis is actually a coeval of Jenkins, but it's just an example.
+
+Then we saw Jenkins, who normalized a lot of things, but the jobs were still configured manually.
+
+Then, the pipelines-as-code approach emerged, we saw Jenkins Pipelines and dozen of CI/CD services, like https://www.travis-ci.com[Travis] and https://docs.gitlab.com/ee/ci[GitLab CI/CD], bloomed.
+Yeah, I know that Travis is technically a coeval of Jenkins—both date back to 2011—but it's just an example.
 
 And finally we have GitHub Actions.
 It is a good old pipelines-as-code solution, but deeply integrated with SCM server.
@@ -26,13 +36,15 @@ And considering how good GitHub repositories are—I mean all those neat feature
 
 But they also have the https://github.com/marketplace[Marketplace] and this is insane!
 
+== TODO
+
 Before the Marketplace there was no easy way to share and reuse a piece of build logic.
 
 Jenkins plugins were too difficult to create, share and reuse (trust me, I published https://github.com/jenkinsci/doktor-plugin[one]).
 You have no choice but Java to author them.
-Then you have to understand some of Jenkins internals and philosophy, like `hudson.Extension` (it's a shit with a looong history, my friend) descriptors, actions, steps, file access API, and Apache Commons Jelly (BTW it's abandoned).
+Then you have to understand some of Jenkins's philosophy and internals, like `hudson.Extension` (it's a shit with a looong history, my friend) descriptors, actions, steps, file access API, and Apache Commons Jelly (BTW it's abandoned).
 Jenkins API is a cursed legacy pile!
-Then you deal with https://www.jenkins.io/doc/developer/plugin-development/dependencies-and-class-loading[classloaders], and it may be a showstopper if you came from JS.
+Then you deal with https://www.jenkins.io/doc/developer/plugin-development/dependencies-and-class-loading[classloaders], and it may be a showstopper.
 Finally, you publish your plugin on https://plugins.jenkins.io[plugins.jenkins.io] and users ask their admins to install it.
 
 GitLab CI/CD has an `include` keyword that allows you to reuse pieces of YAML in different projects, but there is no good way to make those pieces visible and searchable to others.
@@ -41,7 +53,7 @@ Here is the link as a complement: https://gitlab.com/gitlab-org/gitlab/-/tree/ma
 I am not sure if GitLab team will address this in future, probably this "social aspect" is not on their backlog at all.
 As a result, you'll be limited in reusing your own templates, or, as a best case scenario, your company's templates.
 
-This blog is build with GitLab CI/CD and it https://gitlab.com/madhead.me/madhead.me/-/blob/master/.gitlab-ci.yml[takes about 30 lines of YAML] to install https://gohugo.io[Hugo], build the site, and publish it to GitHub Pages.
+This blog is build with GitLab CI/CD (I'm working on it 😀) and it https://gitlab.com/madhead.me/madhead.me/-/blob/master/.gitlab-ci.yml[takes about 30 lines of YAML] to install https://gohugo.io[Hugo], build the site, and publish it to GitHub Pages.
 All this steps are implemented from the ground up with shell commands like `apt install hugo` and so on.
 Here is a functionally equivalent piece of GitHub Actions workflow:
 
@@ -57,14 +69,32 @@ Here is a functionally equivalent piece of GitHub Actions workflow:
     publish_dir: ./public
 ----
 
-It's like 4-6 times shorter, and, more important, it's crystal clear: I'm using Hugo to build the blog and I'm publishing the result to the GitHub Pages.
+It's about 4-6 times shorter, and, more important, it's crystal clear and perfectly balanced: not too low-level, not too high-level.
+Just somewhere in the middle.
 
 All credits go to https://github.com/peaceiris[Shohei Ueda] who shared these reusable actions with me.
 Well, anyone can use `peaceiris/actions-hugo` in their workflows for free!
-And they don't need to know Shohei Ueda to reuse his work, just search for "Hugo" actions https://github.com/marketplace?type=actions&query=Hugo[on the Marketplace] and choose the one they like the most (probably, by the number of stars):
+And they don't need to know Shohei Ueda to reuse their work, just search for "Hugo" actions https://github.com/marketplace?type=actions&query=Hugo[on the Marketplace] and choose the one they like most (probably, by the number of stars):
 
 {{< figure src="//storage.googleapis.com/madheadme-static/posts/imperfect-github-actions/001.png" class="align-center" >}}
 
 And there are thousands of Actions waiting to be reused already, and the number link:../semver-utils[is] link:../read-java-properties[growing].
+This number is probably already bigger than the number of available Jenkins plugins, although Jenkins plugins tend to be more feature-rich and monolithic, while GitHub Actions follow https://en.wikipedia.org/wiki/Unix_philosophy[Unix philosophy] and usually do only one thing per Action.
 
 Are you bored already, because it was only the introduction?
+Let me briefly recap it.
+
+GitHub—the most popular source hosting platform in the world—lauched it's own offering for project & repository automation: GitHub Actions.
+Name it a CI / CD solution.
+These GitHub Actions are damn good mostly because they provide the best integration with GitHub itself and because of the Marketplace.
+And there is a demand on quality reusable Actions on the Marketplace, as both the overall number of projects on GitHub, and the number of projects willing to switch to GitHub Actions, are growing.
+
+And this may lead you to the idea of writing your own Action and publishing it on the Marketplace.
+
+Lucky you, GitHub made it very easy to write and share an Action.
+There are https://docs.github.com/en/actions/creating-actions/about-actions[two types of Actions]: JavaScript and Docker.
+Both use super-simple API for interaction with the environment: there is a JavaScript library to get inputs and provide outputs of an Action and Docker actions just use… command-line arguments.
+Except that it's just you, a workspace of a project with some files, and a language of your choice: JavaScript or TypeScript for JavaScript Actions and virtually any language supporting being dockerized and command-line arguments for Docker Actions.
+Everything is subjective, reality is arbitrary, use your imagination and your skills to do anything.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/imperfect-github-actions/002.jpg" class="align-center" >}}
