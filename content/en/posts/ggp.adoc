@@ -1,0 +1,74 @@
+---
+title: Grand Guide Pedestrian
+date: 2021-07-21T21:43:00+02:00
+tags:
+  - pet projects
+---
+
+Let me tell about a pet project I did recently.
+
+It's name is "Grand Guide Pedestrian".
+It's a virtual interactive experience where a player controls another human, a hero, who walks in the city like it's a GTA game.
+No gunfire, no car thefts, no other crimes, though.
+
+Look at the demo:
+
+{{< youtube 75KIuUGGg3I >}}
+
+And here is the data flow:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/ggp/001.jpg" class="align-center" >}}
+
+A hero streams a video from his camera to the restreamer, who then streams it back to a player.
+A player controls a hero with "classical" WASD controls.
+Keypresses are just sent to the server via websocket, where they are listened by the hero controller app.
+
+Thus, the prototype consists of:
+
+* Video restreamer
+* Websocket server
+* Hero's mobile app
+* Player's SPA
+
+It took me 27 days to finish from the first lines of code to the first walk in the city.
+But actually I've spent only two or three nights coding the server and configuring the video restreamer.
+It took a lot time to find a friend who could help me with the player's SPA.
+And I've spent a week drawing a poster, which was absolutely optionaly, but gave me a lot of fun in the process.
+Look at this poster!
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/ggp/002.png" class="align-center" >}}
+
+Finally, I've spent a night trying to invent an over-the-shoulder camera rig.
+I've https://www.instructables.com/Over-the-Shoulder-Action-Camera-Mount[made one] a few years ago, but back at those days I had a lot of tools and space to work in, but theese days I have only a Leatherman Rev™ tool.
+So, I've made it out of my absolutely fantastic camera tripod (I like it because it already survived three modification and still functional), a karabiner and a few laces. 
+Well, I didn't get the "GTA view", it's more like in PUBG.
+
+Hero's mobile app is written in Flutter, because I know some Flutter and I could make this simple app without any help.
+
+Server uses Kotlin, just because it's the best language in the whole world.
+
+Video restreamer is https://github.com/ossrs/srs[SRS].
+I just took the first working solution.
+
+My https://github.com/aleksei-bulgak[friend Alex] created the player's SPA with React.
+I'm very happy he did it.
+
+Finally, I used https://t.me/face2stickerbot[Face 2 Sticker] Telegram bot to finish some of the poster bits.
+
+The biggest challenge is video restreaming.
+It's too complex and requires computing resources.
+Currently SRS gives a three second delay on a perfect Internet connection.
+4G in the city is twice as slow: five to ten seconds. 
+
+It's absolutely impossible to achieve the interactivity with this delay.
+I've read some articles in the Internet and it seems like HTML5 video is just not as good as RTMP was when Flash was alive.
+Now I look at YouTube at a different angle.
+Believe me: it's ten second delay during a stream is fu##ing great result, a combinations of top-notch engineers and hardware.
+
+The second challenge are websockets.
+They lose connection, deny to reconnect and drop messages constantly.
+
+That's it.
+The code is available https://github.com/Grand-Guide-Pedestrian[here].
+
+Thank you for your attention and have a great day!
