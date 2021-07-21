@@ -1,0 +1,30 @@
+name: Default
+
+on:
+  push:
+    branches-ignore:
+      - master
+
+jobs:
+  default:
+    name: Default
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: latest
+          extended: true
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0.2
+          bundler-cache: true
+
+      - run: gem install asciidoctor
+
+      - run: hugo
