@@ -32,9 +32,8 @@ jobs:
       - run: gem install asciidoctor
 
       - run: hugo
-
-      - run: echo "madhead.me" > public/en/CNAME
-      - run: echo "ru.madhead.me" > public/ru/CNAME
+      
+      - run: sudo sh -c 'echo "StreamLocalBindUnlink yes" >> /etc/ssh/sshd_config'
 
       - uses: peaceiris/actions-gh-pages@v3
         with:
@@ -42,9 +41,11 @@ jobs:
           deploy_key: ${{ secrets.RU_SITE_DEPLOY_KEY }}
           publish_dir: ./public/ru
           publish_branch: master
+          cname: ru.madhead.me
       - uses: peaceiris/actions-gh-pages@v3
         with:
           external_repository: madhead/madhead.github.io
           deploy_key: ${{ secrets.EN_SITE_DEPLOY_KEY }}
           publish_dir: ./public/en
           publish_branch: master
+          cname: madhead.me
