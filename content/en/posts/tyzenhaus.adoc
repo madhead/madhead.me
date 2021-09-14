@@ -1,0 +1,26 @@
+---
+title: Tyzenhaus
+date: 2021-09-14T09:00:00+03:00
+tags:
+  - pet projects
+  - telegram
+---
+
+https://t.me/TyzenhausBot[Tyzenhaus] is a Telegram bot to simplify shared expenses in chats.
+It's like Splitwise, but simpler and doesn't required any apps except Telegram..
+
+<!--more-->
+
+Watch this 30 seconds video, describing the idea:
+
+{{< youtube SDbE_OeLqno >}}
+
+Key concepts:
+
+- This is a Telegram bot;
+- You need to add it to a group chat;
+- Read the help;
+- Track your expenses with it;
+- Tyzenhaus will simplify the debts;
+
+🤑 https://t.me/TyzenhausBot[Try it out] | ⭐ https://github.com/madhead/tyzenhaus[Star on GitHub] | 🤬 https://github.com/madhead/tyzenhaus/issues/new[Create an issue on GitHub].
