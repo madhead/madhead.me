@@ -1,0 +1,53 @@
+---
+title: 'Docker-based GitHub Actions in orphan branches'
+date: 2021-10-10T23:27:00+02:00
+tags:
+  - github actions
+---
+
+GitHub Actions are great for sharing & reusing logic across your CI/CD pipelines.
+However, sometimes sharing is not the highest priority.
+Sometimes you only want to hide the complexity by exctacting & encapsulating multiple build steps and replacing them with a single action.
+
+Anyway, you have to create a GitHub action.
+
+You could use actions https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#example-using-an-action-in-the-same-repository-as-the-workflow[stored in the same repository as the workflow].
+Such actions must be either written in JavaScript or be Docker actions, i.e. have a `Dockerfile`.
+
+With JavaScript, at the time of the writing, actions must be written literally in JavaScript, no processing like compilation or transpilation allowed.
+In other words, it cannot be TypeScript: although you could use TypeScript to write an action, you'll have to commit the `dist` then.
+
+Docker actions are slow because the caching doesn't work well at the time of the writing.
+Images are built from scratch every time you run a pipeline.
+
+Finally, you may be against of polluting the main codebase with action's code, and this is a valid argument too!
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/orphan-action/001.png" class="align-center" >}}
+
+Because of this issues — polluting main codebase, forcing you to use vanilla JavaScript or being slow with other languages and runtimes — in-repository actions might not look appealing to you.
+
+So you might want to take the hard way: to extract your action into a separate repository.
+But even then caching won't work well with Docker actions and you'll have to commit `dist` with JavaScript actions.
+However, in a separate repository you could at least have action's own lifecycle and mitigate that with automation.
+
+😔 That's some extra work…
+
+Try https://git-scm.com/docs/git-checkout#Documentation/git-checkout.txt---orphanltnewbranchgt[orphan branches] instead!
+
+The idea is to create an orphan branch in your repository.
+Orphan means it wont have any intersections or common commits with the main branch, a completely separate one.
+GitHub won't even allow you to make a PR to the main branch from the orphan one.
+
+Thinking about Git as a tree was a mistake, it's actually a forest!
+
+Now you could store your whole action, written in any language, in this branch.
+It would have a completely different lifecycle by having completely different workflows in this branch's `.github/workflows` directory.
+If it's a Docker action, you could built and publish it to the GitHub packages of the same repository and use it the main branch's workflows without rebuilding every time.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/orphan-action/002.png" class="align-center" >}}
+
+All the issues are solved!
+
+✅ The codebase wouldn't have any traces of the auxiliary actions code. +
+✅ Actions would have a completely independent lifecycle. +
+✅ Docker actions would be prebuilt. +
