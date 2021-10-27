@@ -24,7 +24,7 @@ It's time to move your projects to Maven Central Repository, so I've gathered so
 
 The first thing to know: there is no such thing as "Maven Central Repository".
 Just like your company's https://jfrog.com/artifactory[Artifactory] (btw, another tool by JFrog), it's a facade, a proxy for multiple distributed repositories who actually store the artifacts.
-So, you don't publish directly to the Central, you publish to one of those repositories and your artifacts appears in the Central.
+So, you don't publish directly to the Central, you publish to one of those repositories and your artifacts appear in the Central.
 
 https://central.sonatype.org/pages/ossrh-guide.html[Sonatype OSSRH] (OSS Repository Hosting) is such a repository accepting artifacts from individuals and companies who make — you got it! — open-source software.
 
