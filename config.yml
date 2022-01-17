@@ -100,3 +100,8 @@ menu:
       name: cv
       url: /cv/
       weight: 3
+
+security:
+  exec:
+    allow:
+      - asciidoctor
