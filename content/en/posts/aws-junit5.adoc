@@ -11,7 +11,7 @@ Do you test the code that uses AWS services?
 Do you use JUnit 5 in your tests?
 If you do both, I may have something useful for you.
 
-https://gitlab.com/madhead/aws-junit5[JUnit 5 extensions for AWS]: a few JUnit 5 extensions that could be useful for testing AWS-related code.
+https://github.com/madhead/aws-junit5[JUnit 5 extensions for AWS]: a few JUnit 5 extensions that could be useful for testing AWS-related code.
 These extensions can be used to inject clients for AWS service mocks provided by tools like https://github.com/localstack/localstack[localstack].
 Both AWS Java SDK v 2.x and v 1.x are supported.
 
@@ -50,7 +50,7 @@ Here, at the level of integration testing, come tools like https://github.com/lo
 The idea is to mock an AWS service using a low-cost, disposable (in-memory) implementation and use it to test your code.
 Localstack already supports two dozen of AWS services and the list is growing!
 
-You only have to get the clients in your test classes, and https://gitlab.com/madhead/aws-junit5[`aws-junit5`] will help you do with a minimal effor:
+You only have to get the clients in your test classes, and https://github.com/madhead/aws-junit5[`aws-junit5`] will help you do with a minimal effor:
 
 [source, kotlin]
 ----
@@ -106,12 +106,12 @@ class HTTPConfiguration : SdkAsyncHttpClientFactory {
 ----
 
 In most cases only `@AWSClient` with `endpoint` is needed.
-You can use https://gitlab.com/madhead/aws-junit5[`aws-junit5`] to inject clients for DynamoDB, Kinesis, S3, SES, SNS and SQS.
+You can use https://github.com/madhead/aws-junit5[`aws-junit5`] to inject clients for DynamoDB, Kinesis, S3, SES, SNS and SQS.
 
 Even if you use real AWS services for testing (i.e. you have a dedicated environment for tests) — you still can use these extensions to get the required clients.
 
-Read more in the https://madhead.gitlab.io/aws-junit5/asciidoc[user guide] and https://madhead.gitlab.io/aws-junit5/javadoc[Javadocs].
-Submit https://gitlab.com/madhead/aws-junit5/issues/new[an issue] in case of any questions, problems, proposals or requests.
+Read more in the https://madhead.github.io/aws-junit5/asciidoc[user guide] and https://madhead.github.io/aws-junit5/javadoc[Javadocs].
+Submit https://github.com/madhead/aws-junit5/issues/new[an issue] in case of any questions, problems, proposals or requests.
 
 And…
 
