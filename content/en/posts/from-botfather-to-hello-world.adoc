@@ -118,7 +118,7 @@ In this tutorial, we'll use https://github.com/InsanusMokrassar/TelegramBotAPI[I
 
 [NOTE]
 ====
-You can find many frameworks, along with code examples, in https://core.telegram.org/bots/samples[our dedicated list].
+You can find many frameworks, along with code examples, in https://core.telegram.org/bots/samples[the dedicated list].
 ====
 
 ### Create Your Project
@@ -379,7 +379,7 @@ Now send a new command, followed by a brief description.
 For the purpose of this tutorial, we'll implement two simple commands:
 
 {{< highlight text >}}
-scream — Speak, I'll scream right back 
+scream — Speak, I'll scream right back
 whisper — Shhhhhhh
 {{< / highlight >}}
 
@@ -399,7 +399,7 @@ suspend fun main(args: Array<String>) {
 }
 {{< / highlight >}}
 
-Then, let's change some logic to **switch the mode**.
+Then, let's add a logic to **switch the mode**.
 
 {{< highlight diff >}}
 bot.buildBehaviourWithLongPolling {
@@ -432,7 +432,7 @@ Probably when you're reading these lines, these extensions are already https://g
 
 Finally, let's tune our `onContentMessage` to support the modality.
 
-{{< highlight diff >}}
+{{< highlight kotlin >}}
 onContentMessage(
     initialFilter = CommonMessage<MessageContent>::hasNoCommands
 ) {

@@ -1,0 +1,421 @@
+---
+title: 'Learning Kafka: Kafka Streams + Wikipedia'
+date: 2022-11-07T21:00:00+02:00
+tags:
+  - kotlin
+  - kafka
+  - pet projects
+---
+
+It's been two years since my link:../kafka-connect-wikipedia["Learning Kafka: Kafka Connect + Wikipedia"] article, where I promised to develop a https://kafka.apache.org/documentation/streams[Kafka Streams] application processing Wikipedia's recent changes stream.
+
+It's time to keep the promise!
+Especially since recently my team got a chance to work with Kafka and I decided to refresh my knowledge.
+
+<!--more-->
+
+## Contents
+
+* <<agenda, What are we going to do>>
+* <<problem, The Problem>>
+* <<database, Database schema>>
+* <<grafana, Grafana dashboard>>
+* <<streams, Kafka Streams>>
+** <<scaffold, Application scaffold>>
+** <<stream, Creating a stream from a topic>>
+** <<filter, Filtering a stream>>
+** <<selectKey, Keying a stream>>
+** <<groupByKey, Repartitioning a stream>>
+** <<windowedBy, Windowing>>
+** <<count, Couning recent changes>>
+** <<toStream, Emitting windowed aggregates>>
+** <<map, Transforming data>>
+** <<peek, Debugging a stream>>
+** <<to, Emitting a stream to a topic>>
+* <<recap, Recap>>
+
+[#agenda]
+## What are we going to do
+
+link:../kafka-connect-wikipedia[Last time] we've connected Wikipedia's https://en.wikipedia.org/wiki/Special:RecentChanges[recent changes stream] to Kafka by implementing https://kafka.apache.org/documentation/#connect[Kafka Connect's] https://kafka.apache.org/32/javadoc/org/apache/kafka/connect/source/SourceConnector.html[``SourceConnector``].
+This is where we'll start: from a Kafka topic with recent updates.
+
+{{<figure src="//storage.googleapis.com/madheadme-static/posts/kafka-streams-wikipedia/001.png" class="align-center">}}
+
+Today we're going to implement steps 3 through 7 from the figure above:
+
+[start = 3]
+. Write simple Kafka Streams application
+. Run it against our data
+. Stream the results to a different Kafka topic
+. Stream that topic to a database
+. Visualize the data
+
+Sounds like a lot of work to do?!
+
+Not really.
+We're not going to write a lot of code, because YAML is not code! 😬
+
+But jokes aside, I'll omit all the configuration and focus only on the Kafka Streams application.
+Refer to the https://github.com/madhead/learning-kafka[repository], for the complete demo.
+I've made things simple: you could play with the code and run the whole stack with a single https://github.com/madhead/learning-kafka/blob/master/start.sh[``start.sh``] command!
+
+[IMPORTANT]
+====
+Code and configuration present in this article and its accompanying repository **is not ready for production**.
+It does not handle exceptions properly.
+It does not reconnect on network errors.
+It may lose updates or process them twice.
+Most of the configs are set to defaults.
+Security credentials are hardcoded to well-known values.
+The computation logic is simplified in favor of understandability over sanity and correctness.
+====
+
+[#problem]
+## The Problem
+
+But wait, what problem are we going to solve?!
+
+Kafka Streams is a pretty powerful library and it allows you to solve a lot of different problems falling in stream processing domain.
+Basically, you could filter, transform, aggregate, and join streams of data with Kafka Streams.
+
+So, just to practice, let's think of an interesting problem.
+How about this?
+
+[quote]
+Compute the rate of the updates made by non-bot users grouped by a subdomain.
+
+With this data we could make a dashboard like this 👇🏼
+
+{{<figure src="//storage.googleapis.com/madheadme-static/posts/kafka-streams-wikipedia/002.png" class="align-center">}}
+
+It essentially visualizes wiki's load (both instant and historical) by the language.
+
+I chose these wikis on purpose: the historical data chart below, showing the load for about 3 days, clearly depicts load periodicity.
++++<span style="color: #f2cc0c">English</span>+++ language has speakers (thus, wiki contributors) all around the world, so its contribution rate is relatively uniform.
+At the same time, +++<span style="color: #73bf69">German</span>+++ and +++<span style="color: #8ab8ff">Japanese</span>+++ languages are spoken in countries spanning only over a single timezone, with Japan being ahead of Germany about 6–8 hours due to its far-eastern location.
+
+[#database]
+## Database schema
+
+Let's continue to think about our problem in a declarative way.
+What data do we need to have to answer the given question?
+
+It turns out, that only tree values are enough: subdomain name (AKA `wiki`), number of updates in a given period of time (in our case it's a per-minute `rate`), and a `time` the measurement was taken at.
+So, this is the table definition:
+
+[source, sql]
+----
+CREATE TABLE recent_changes_rate_by_wiki (
+    wiki VARCHAR(256),
+    time TIMESTAMP,
+    rate DOUBLE PRECISION,
+
+    PRIMARY KEY (WIKI, TIME)
+);
+----
+
+Storing the data like this will give us the ability to query both instant and historical values.
+
+Furthermore, an open source database connector — https://docs.confluent.io/kafka-connect-jdbc/current/sink-connector/index.html[``JdbcSinkConnector``] — integrates with this table perfectly with just a https://github.com/madhead/learning-kafka/blob/master/kafka/postgres-sink-connector/connector.properties[few lines] of configuration.
+
+So, let's aim for something like this as an output of our Kafka Streams application.
+
+[IMPORTANT]
+====
+RDBMS, like PostgreSQL, are not the best choice for storing time-series data in the real world.
+At least without https://timescale.com[any tweaks].
+====
+
+[#grafana]
+## Grafana dashboard
+
+Imagine that we already have the data in the <<database, table>>.
+Then, here are the queries used to build the dashboard.
+
+.To get instant update rates for the most active wiki (filtering out the https://en.wikipedia.org/wiki/Long_tail[long tails]) I did this:
+[source, sql]
+----
+SELECT wiki, rate
+FROM (SELECT wiki, time, rate, ROW_NUMBER() OVER (PARTITION BY wiki ORDER BY time DESC) RN
+      FROM recent_changes_rate_by_wiki
+      WHERE rate > 5
+        AND time > NOW() - INTERVAL '1 minute') tmp
+WHERE RN = 1
+ORDER BY wiki;
+----
+
+.To calculate the historical update rates I did this:
+[source, sql]
+----
+SELECT
+  $__timeGroupAlias("time",$__interval),
+  wiki AS metric,
+  avg(rate) AS "rate"
+FROM recent_changes_rate_by_wiki
+WHERE
+  $__timeFilter("time") AND
+  wiki IN ($wiki)
+GROUP BY 1,2
+ORDER BY 1,2
+----
+
+Actually, I didn't write the last query myself.
+Instead, I used Grafana's query builder to make it.
+You may notice those https://grafana.com/docs/grafana/latest/datasources/postgres/#macros[macroses], starting with the dollar sign.
+They are expanded by Grafana and allow you selecting time ranges and adjusting data granularity.
+The idea is that no matter how big is the time range you've selected in the UI, Grafana will query for a constant number of data points, let's say 100.
+If it don't do that, selecting bigger time ranges will result in more data points, which will result in degraded UI performance.
+
+[#streams]
+## Kafka Streams
+
+Now, with steps 5, 6, and 7 from our <<agenda, agenda>> covered, let's get __on-topic__.
+No puns: let's get our data processed by a Kafka Streams application and put into the destination topic.
+
+Having in mind our original goal…
+
+[quote]
+Compute the rate of the updates made by non-bot users grouped by a subdomain.
+
+…I see the implementation this way:
+
+. Filter out all the updates made by bots
+. Chunk the updates into one-minute windows
+. For every window, count the number of the updates grouped by their wikis
+. Stream the results out into the topic <<#database, connected>> to the database
+
+This is a high-level strategy, the implementation requires a few technical additions, caused by the way Kafka Streams work.
+
+[#scaffold]
+### Application scaffold
+
+The first thing to understand, is that every Kafka Streams application is just a regular standalone JVM application, i.e. it's a good old `main()` function.
+Unlike link:../kafka-connect-wikipedia[connectors in the distributed mode], Kafka Streams applications are not "embedded" or "plugged into" anywhere, they run on their own.
+All the coordination and workload distribution is done by Kafka's own means, like topic partitions and consumer groups.
+
+The purpose of this `main()` method is to build a topology of one or more data streams, i.e. a graph of processing nodes operating on the data.
+These data streams could do a lot of things, ranging from simple stateless filtering to stateful aggregations and joins.
+
+The entrypoint to these APIs is  a https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/StreamsBuilder.html[`StreamsBuilder`]:
+
+[source, kotlin]
+----
+val streamsBuilder = StreamsBuilder()
+----
+
+`StreamBuilder` allows developers to create https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/kstream/KStream.html[``KStream``s] and https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/kstream/KTable.html[``KTable``s]:
+
+[source, kotlin]
+----
+streamsBuilder.stream(…)
+
+streamsBuilder.table(…)
+----
+
+Streams and tables are meat and bones of Kafka Streams applications, they are the two fulcrums of the whole Kafka Stream API.
+We'll explore some of their methods in the later steps.
+
+As you might expect from a `-Builder` class, `StreamsBuilder` builds something.
+What you might not expect, is that it builds a https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/Topology.html[`Topology`], and not something named `Streams`.
+One nice method of a `Topology` is https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/Topology.html#describe()[`describe()`], which returns a printable topology representation, useful for troubleshooting purposes.
+
+[source, kotlin]
+----
+val topology = streamsBuilder.build()
+
+logger.info(topology.describe())
+----
+
+Finaly, a topology is combined with Kafka connection porperties to build a https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/KafkaStreams.html[`KafkaStreams`] instance:
+
+[source, kotlin]
+----
+val kafkaStreams = KafkaStreams(topology, streamsProperties(bootStrapServers))
+
+kafkaStreams.start()
+----
+
+Combining everything together, a typical Kafka Streams application looks like this:
+
+[source, kotlin]
+----
+fun main(args: Array<String>) {
+    val streamsBuilder = StreamsBuilder()
+
+    streamsBuilder
+        .stream(…)
+        .<operations>
+    streamsBuilder
+        .table(…)
+        .<operations>
+    // more streams and tables
+
+    val topology = streamsBuilder.build()
+
+    val kafkaStreams = KafkaStreams(topology, streamsProperties(bootStrapServers))
+
+    kafkaStreams.start()
+}
+----
+
+Now, let's focus on the `KStream` API and solve our task.
+
+[#stream]
+### Creating a stream from a topic
+
+A stream usually starts from a regular Kafka topic.
+The only required parameter is topic's name, but an additional https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/kstream/Consumed.html[`Consumed`] argument could be passed to fine-grain this step.
+
+[source, kotlin]
+----
+streamsBuilder.stream(
+    "mediawiki.recentchange",
+    Consumed
+        .`as`<Void, RecentChange>("wikipedia_recent_changes_stream")
+        .withValueSerde(RecentChangeSerde)
+        .withTimestampExtractor(RecentChangeTimestampExtractor)
+        .withOffsetResetPolicy(Topology.AutoOffsetReset.LATEST),
+)
+----
+
+Here, the second `Consumed` parameter controls the way the topic is consumed:
+
+. The resulting data stream would have keys of type `Void` (i.e. no keys) and values of type `RecentChange`
+. The step is given a name: `wikipedia_recent_changes_stream`.
+Naming steps is optional — Kafka Streams will generate names if omitted  — but useful for debugging purposes.
+. Values are deserialized using a https://github.com/madhead/learning-kafka/blob/master/kafka/stream/src/main/kotlin/me/madhead/kafka/kafka/stream/RecentChangeSerde.kt[`RecentChangeSerde`] instance.
+It just turns JSONs into objects.
+. Records are assigned a time using a https://github.com/madhead/learning-kafka/blob/master/kafka/stream/src/main/kotlin/me/madhead/kafka/kafka/stream/RecentChangeTimestampExtractor.kt[`RecentChangeTimestampExtractor`] instance.
+It returns update's timestamp.
+https://kafka.apache.org/20/documentation/streams/core-concepts#streams_time[Timestamping] records is important for time-based windowing.
+. Finally, the https://docs.confluent.io/platform/current/clients/consumer.html#offset-management[offset reset policy] is set to `LATEST`, which means that our Kafka Streams application will just drop unprocessed records in case of any downtimes.
+
+[#filter]
+### Filtering a stream
+
+Next, we should drop all the updates made by bots.
+Let's also drop the updates for unknown wikis, if any.
+
+[source, kotlin]
+----
+filter(
+    { _, value -> value.bot == false && value.wiki != null },
+    Named.`as`("filter_updates_from_bots_and_unknown_wikis"),
+)
+----
+
+Here and below, https://kafka.apache.org/32/javadoc/org/apache/kafka/streams/kstream/Named.html[`Named`] parameters are used to assign names to steps, in a way simiar to `Consumed` above.
+
+[#selectKey]
+### Keying a stream
+
+Now it's a perfect time to assign keys to records.
+Unsurprisingly, the key is the `wiki` field:
+
+[source, kotlin]
+----
+selectKey(
+    { _, value -> value.wiki!! },
+    Named.`as`("key_by_wiki"),
+)
+----
+
+Keying the stream is one of the most important operations.
+Kafka Streams uses keys to determine topic partitions for records.
+All the records with the same key will be appended to the same partition.
+
+[#groupByKey]
+### Repartitioning a stream
+
+[source, kotlin]
+----
+groupByKey(
+    Grouped
+        .`as`<String?, RecentChange?>("group_by_wiki")
+        .withKeySerde(Serdes.String())
+        .withValueSerde(RecentChangeSerde)
+)
+----
+
+[#windowedBy]
+### Windowing
+
+[source, kotlin]
+----
+windowedBy(
+    TimeWindows
+        .ofSizeAndGrace(1.minutes.toJavaDuration(), 15.seconds.toJavaDuration())
+        .advanceBy(5.seconds.toJavaDuration()),
+)
+----
+
+[#count]
+### Couning recent changes
+
+[source, kotlin]
+----
+count(
+    Materialized
+        .`as`<String?, Long?, WindowStore<Bytes, ByteArray>?>("mediawiki.recentchange.by_wiki")
+        .withKeySerde(Serdes.String())
+        .withValueSerde(Serdes.Long())
+        .withCachingDisabled()
+)
+----
+
+[#toStream]
+### Emitting windowed aggregates
+
+[source, kotlin]
+----
+suppress(
+    Suppressed.untilWindowCloses(Suppressed.BufferConfig.unbounded()),
+)
+----
+
+[source, kotlin]
+----
+toStream(
+    Named.`as`("ktable_to_kstream")
+)
+----
+
+[#map]
+### Transforming data
+
+[source, kotlin]
+----
+map(
+    { key, value -> KeyValue(key.key(), constructPayloadWithSchema(key.key(), value, key.window().end())) },
+    Named.`as`("prepare_payload_with_schema")
+)
+----
+
+[#peek]
+### Debugging a stream
+
+[source, kotlin]
+----
+peek(
+    { key, value -> logger.debug { SimpleMessage("$key: $value") } },
+    Named.`as`("debug_the_stream"),
+)
+----
+
+[#to]
+### Emitting a stream to a topic
+
+[source, kotlin]
+----
+to(
+    sinkTopic,
+    Produced
+        .`as`<String?, String?>("wikipedia_recent_changes_stream_rate_per_minute_by_wiki")
+        .withKeySerde(Serdes.String())
+        .withValueSerde(Serdes.String())
+)
+----
+
+[#recap]
+## Recap
