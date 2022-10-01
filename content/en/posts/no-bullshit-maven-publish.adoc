@@ -264,8 +264,11 @@ Only now your artifacts are in OSSRH!
 
 But not in the Central Maven Repository yet…
 
++++<del>+++
 You had to do one more thing, but only for the first time you publish a project: you have to **go back to the issue you've opened for a namespace in OSSRH and ask the person it is assigned to turn on the sync of your artifacts to the Central**.
 Successive publications will be synced automatically once the sync is turned on.
++++</del>+++
+Maven Central team meber link:#comment-5900031092[said in the comments] that this step is not needed.
 
 It will take a few minutes for the artifacts to appear in the Central (https://repo1.maven.org/maven2) after you release them, but the search (https://search.maven.org) may be updating a few hours.
 
