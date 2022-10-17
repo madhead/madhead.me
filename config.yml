@@ -86,6 +86,7 @@ params:
       - about
       - sidebar_menu
       - social_menu
+  monetization: $ilp.uphold.com/wgzRi7wDbPFf
 menu:
   sidebar:
     - identifier: posts
