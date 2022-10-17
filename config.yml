@@ -103,5 +103,7 @@ menu:
 
 security:
   exec:
+    osEnv:
+      - (?i)^(PATH|PATHEXT|APPDATA|TMP|TEMP|TERM|GEM_PATH)$
     allow:
       - asciidoctor
