@@ -87,6 +87,10 @@ params:
       - sidebar_menu
       - social_menu
   monetization: $ilp.uphold.com/wgzRi7wDbPFf
+  assets:
+    customCSS:
+      - css/admonitions.css
+
 menu:
   sidebar:
     - identifier: posts
