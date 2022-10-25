@@ -26,7 +26,6 @@ This guide will walk you through everything you need to know to build your first
 If you already know your way around some of the basic steps, you can jump directly to the part you're missing.
 Equivalent examples are available in https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go] and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript].
 
-TODO
 * <<introduction, Introduction>>
 * <<getting-ready, Basic Tutorial>>
 ** <<getting-ready, Environment>>
@@ -38,7 +37,6 @@ TODO
 ** <<database, Database>>
 ** <<hosting, Hosting>>
 * <<further-reading, Further Reading>>
-TODO
 
 [#introduction]
 ## Introduction
@@ -244,6 +242,7 @@ You might be confused by all this coroutines jobs, scopes, flows, and, especiall
 But those are the very basic concepts and patterns of Kotlin Coroutines.
 After finishing this tutorial you might want to https://kotlinlang.org/docs/coroutines-overview.html[read more] about them.
 
+[#first-run]
 ## First Run
 
 It's time to **run your bot** for the first time.
@@ -328,6 +327,7 @@ Try experimenting with other types of messages, like https://tgbotapi.inmo.dev/d
 A full list is available starting https://core.telegram.org/bots/api#sendmessage[here].
 ====
 
+[#echo-bot]
 ## Echo Bot
 
 Let's practice everything we tried so far by coding an **Echo Bot**.
@@ -364,6 +364,7 @@ This tutorial assumes that updates always contain messages for the sake of simpl
 This may not always be true – be sure to implement all the proper checks in your code to handle every type of update with the appropriate methods.
 ====
 
+[#executing-commands]
 ## Executing Commands
 
 To learn what a command is and how it works, we recommend reading this https://core.telegram.org/bots/features#commands[dedicated summary].
@@ -553,6 +554,7 @@ If you did everything correctly, you should see a brand new menu pop up.
 In a production environment, commands should be handled with an appropriate design pattern that isolates them into different executor classes – modular and separated from the main logic.
 ====
 
+[#navigation]
 ## Navigation
 
 When building complex bots, navigation is essential.
@@ -603,6 +605,7 @@ bot.buildBehaviourWithLongPolling() {
 With these handlers, whenever a button is tapped, your bot will automatically navigate between inline menus.
 Expanding on this concept allows for endless combinations of navigable submenus, settings and dynamic pages.
 
+[#database]
 ## Database
 
 Telegram **does not** host an update database for you – once you process and consume an update, it will no longer be available.
@@ -618,6 +621,7 @@ Implementing a database is out of scope for this guide, however, several guides 
 Your language of choice will also influence which databases are available and supported – the list above assumes you followed this Java tutorial.
 ====
 
+[#hosting]
 ## Hosting
 
 So far, your bot has been running on your **local machine** – your PC.
@@ -678,6 +682,7 @@ To streamline and modularize this process, you could employ a specialized https:
 If you followed along in one of the equivalent examples (https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go] and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript]) you can find a detailed set of instructions to export and run your code https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main[here].
 ====
 
+[#further-reading]
 ## Further Reading
 
 If you got this far, you might be interested in these additional guides and docs:
