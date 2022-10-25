@@ -675,7 +675,7 @@ Your bot is now online and users can interact with it at any time.
 [NOTE]
 ====
 To streamline and modularize this process, you could employ a specialized https://www.docker.com/resources/what-container/[docker container] or equivalent service.
-If you followed along in one of the equivalent examples (https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go] and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript]) you can find a detailed set of instructions to export and run your code https://github.com/madhead/from-botfather-to-hello-world/blob/main/README.adoc[here].
+If you followed along in one of the equivalent examples (https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go] and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript]) you can find a detailed set of instructions to export and run your code https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main[here].
 ====
 
 ## Further Reading
