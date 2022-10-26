@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  dead-links:
-    name: Dead links
+  dead-links-muffet:
+    name: Dead links (Muffet)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -29,3 +29,63 @@ jobs:
             --exclude="localhost"
             --exclude=".*madhead\.me\/cdn-cgi\/l\/email\-protection.*"
             --exclude="linkedin"
+
+  dead-links-blc:
+    name: Dead links (BLC)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        site:
+          - https://madhead.me
+          - https://ru.madhead.me
+    steps:
+      - run: npm install --global broken-link-checker
+      - name: ${{ matrix.site }}
+        run: >-
+          blc
+          -r
+          --exclude=linkedin
+          ${{ matrix.site }}
+
+  dead-links-linkcheck:
+    name: Dead links (linkcheck)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        site:
+          - https://madhead.me
+          - https://ru.madhead.me
+    steps:
+      - name: ${{ matrix.site }}
+        uses: filiph/linkcheck@v2.0.15+1
+        with:
+          arguments: ${{ matrix.site }}
+
+  dead-links-hyperlink:
+    name: Dead links (hyperlink)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - uses: peaceiris/actions-hugo@v2
+        with:
+          hugo-version: latest
+          extended: true
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.0.2
+          bundler-cache: true
+
+      - run: gem install asciidoctor
+
+      - run: hugo
+
+      - uses: untitaker/hyperlink@0.1.26
+        with:
+          args: public
