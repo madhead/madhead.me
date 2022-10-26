@@ -10,6 +10,7 @@ jobs:
     name: Dead links
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         site:
           - https://madhead.me
@@ -19,3 +20,12 @@ jobs:
         uses: ruzickap/action-my-broken-link-checker@v2.3.0
         with:
           url: ${{ matrix.site }}
+          cmd_params: >-
+            --rate-limit=10
+            --max-connections-per-host=5
+            --buffer-size=8192
+            --header="User-Agent: curl/7.81.0"
+            --ignore-fragments
+            --exclude="localhost"
+            --exclude=".*madhead\.me\/cdn-cgi\/l\/email\-protection.*"
+            --exclude="linkedin"
