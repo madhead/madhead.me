@@ -6,7 +6,7 @@ tags:
   - telegram
 ---
 
-https://t.me/ImgMacroBot[@ImgMacroBot] is an https://core.telegram.org/bots/inline[inline] Telegram bot for https://en.wikipedia.org/wiki/Image_macro[image macros].
+https://t.me/ImgMacroBot[@ImgMacroBot] +++<del>+++is+++</del>+++was an https://core.telegram.org/bots/inline[inline] Telegram bot for https://en.wikipedia.org/wiki/Image_macro[image macros].
 
 <!--more-->
 
@@ -14,14 +14,14 @@ I remember those good old days when to make a good joke it was sufficient to pla
 I miss that in Telegram.
 
 So, I've created https://t.me/ImgMacroBot[@ImgMacroBot] — inline Telegram bot who generated image macros on the fly.
-You can use it in any conversation or group, just mention it with a recognizable phrase.
-E.g. if you write something like "@ImgMacroBot what if I told you a joke?" it will generate an image like this:
++++<del>+++You can use it in any conversation or group, just mention it with a recognizable phrase.+++</del>+++
++++<del>+++E.g. if you write something like "@ImgMacroBot what if I told you a joke?" it will generate an image like this:+++</del>+++
 
 {{< figure src="//storage.googleapis.com/madheadme-static/posts/imgmacrobot/001_en.jpeg" class="align-center" >}}
 
-The font is https://fonts.google.com/specimen/Oswald[Oswald], because I didn't find any free Impact-like with cyrillic.
+The font +++<del>+++is+++</del>+++was https://fonts.google.com/specimen/Oswald[Oswald], because I didn't find any free Impact-like with cyrillic.
 
-There list of templates is pretty short, you can find it https://github.com/madhead/ImgMacroBot#readme[in project's README], but it will be growing slowly until I drop this project completely.
-If you miss something — https://github.com/madhead/ImgMacroBot/issues/new?assignees=madhead&labels=macro&template=macro-request.md&title=[create an issue].
+There list of templates +++<del>+++is+++</del>+++was pretty short, you could find it https://github.com/madhead/ImgMacroBot#readme[in project's README] +++<del>+++, but it will be growing slowly until I drop this project completely+++</del>+++.
+If you miss something — https://github.com/madhead/ImgMacroBot/issues[create an issue].
 
 Thank you for your attention.

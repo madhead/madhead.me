@@ -11,7 +11,7 @@ Sometimes you only want to hide the complexity by exctacting & encapsulating mul
 
 Anyway, you have to create a GitHub action.
 
-You could use actions https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#example-using-an-action-in-the-same-repository-as-the-workflow[stored in the same repository as the workflow].
+You could use actions https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#example-using-an-action-in-the-same-repository-as-the-workflow[stored in the same repository as the workflow].
 Such actions must be either written in JavaScript or be Docker actions, i.e. have a `Dockerfile`.
 
 With JavaScript, at the time of the writing, actions must be written literally in JavaScript, no processing like compilation or transpilation allowed.
@@ -32,7 +32,7 @@ However, in a separate repository you could at least have action's own lifecycle
 
 😔 That's some extra work…
 
-Try https://git-scm.com/docs/git-checkout#Documentation/git-checkout.txt---orphanltnewbranchgt[orphan branches] instead!
+Try https://git-scm.com/docs/git-checkout#Documentation/git-checkout.txt---orphanltnew-branchgt[orphan branches] instead!
 
 The idea is to create an orphan branch in your repository.
 Orphan means it wont have any intersections or common commits with the main branch, a completely separate one.

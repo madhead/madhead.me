@@ -6,7 +6,7 @@ tags:
   - telegram
 ---
 
-https://ywltb.herokuapp.com[YWLTB] — or YouTube Watch Later Telegram Bot — is a Telegram bot that does one simple thing: adds incoming YouTube videos into your "Watch Later" playlist. 
+YWLTB — or YouTube Watch Later Telegram Bot — +++<del>+++is+++</del>+++was a Telegram bot that +++<del>+++does+++</del>+++did one simple thing: add incoming YouTube videos into your "Watch Later" playlist. 
 
 <!--more-->
 
@@ -22,7 +22,7 @@ That's how https://t.me/YouTubeWatchLaterBot[@YouTubeWatchLaterBot] was born.
 
 Enjoy!
 And don't be afraid that I would add some spam into your playlists.
-The https://gitlab.com/madhead/YWLTB[code is open-sourced] (although I am ashamed to share it), the best Harvard alumni crafted my https://ywltb.herokuapp.com/privacy.html[Privacy Policy], and the app successfully passed Google API OAuth Dev Verification.
+The https://gitlab.com/madhead/YWLTB[code is open-sourced] (although I am ashamed to share it), the best Harvard alumni crafted my Privacy Policy, that was once available at `\https://ywltb.herokuapp.com/privacy.html`, and the app successfully passed Google API OAuth Dev Verification.
 However, if you are really paranoid but still want to use it — run your own instance, the guide is in https://gitlab.com/madhead/YWLTB/-/blob/master/README.adoc[README], and free Heroku account will be enough.
 
 A few words about the verification process, for those who are interested in it.

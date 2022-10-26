@@ -42,7 +42,7 @@ Then I used some https://stackoverflow.com/a/49418406/750510[black magic] to sav
 …spending like an hour learning the importance of double quotes…
 
 Finally, I got my key in `~/.ssh/deployment_key` and it looked fine.
-To check that, I've https://docs.github.com/en/actions/guides/storing-workflow-data-as-artifacts[stored it as an artifact], downloaded that artifact at the end of the workflow, and checked the key manually.
+To check that, I've https://docs.github.com/en/actions/using-workflows/storing-workflow-data-as-artifacts[stored it as an artifact], downloaded that artifact at the end of the workflow, and checked the key manually.
 
 But when I tried to use that key with Ansible to connect to a server I got a really strange error message:
 

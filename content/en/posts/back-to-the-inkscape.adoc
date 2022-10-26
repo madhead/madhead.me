@@ -25,8 +25,8 @@ First thing to do is to find a font.
 https://www.dafont.com/back-to-the-future.font[Back to the Future 2002] seems to be what we need.
 Download and install it so it's available across your system.
 
-Now let's go to the http://www.backtothefuture.com[official BTTF site] and find a logo to use as a reference.
-http://www.backtothefuture.com/movies/movie_images/logo-bttf.aspx[Here] is the one from the original movie.
+Now let's find a logo for the reference.
+Wiki https://commons.wikimedia.org/wiki/File:Back-to-the-future-logo.svg[has one] from the original movie.
 
 Open an Inkscape and paste the image into the workspace:
 
@@ -86,7 +86,7 @@ You need to achieve something like this:
 
 {{< figure src="//storage.googleapis.com/madheadme-static/posts/back-to-the-inkscape/005.png" >}}
 
-If for some reason the letters are rotated unpredictably http://www.inkscapeforum.com/viewtopic.php?t=15813[redraw the polygons] starting from the bottom left corner.
+If for some reason the letters are rotated unpredictably redraw the polygons starting from the bottom left corner.
 This is easy with node snapping enabled: Bezier tool will “stick” to the existing corners.
 
 TIP: “Perspective” extension maps bottom left of your selection to the first node you draw, and continues clockwise for the other nodes.

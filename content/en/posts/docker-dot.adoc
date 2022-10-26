@@ -13,7 +13,7 @@ Graphviz doesn't seem to have an official Docker image, so I've created https://
 
 <!--more-->
 
-The usage (in, e.g. https://docs.github.com/en/free-pro-team@latest/actions[GitHub Actions]) is simple:
+The usage (in, e.g. https://docs.github.com/en/actions[GitHub Actions]) is simple:
 
 .workflow.yml
 [source, yml]

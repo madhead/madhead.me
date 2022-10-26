@@ -137,7 +137,7 @@ tasks.withType(KaptGenerateStubsTask::class.java).all {
 ### Rx Java 2
 
 Я с самого начала использовал асинхронный API для работы с воркспейсом (на самом деле, не пожалел), и задумался о том, во что его обернуть.
-https://kotlinlang.org/docs/reference/coroutines.html[Корутин] я пока побаиваюсь, решил попробовать https://github.com/ReactiveX/RxJava[Rx Java] / https://github.com/ReactiveX/RxKotlin[Kotlin].
+https://kotlinlang.org/docs/coroutines-overview.html[Корутин] я пока побаиваюсь, решил попробовать https://github.com/ReactiveX/RxJava[Rx Java] / https://github.com/ReactiveX/RxKotlin[Kotlin].
 Тем более, тут и вторая версия недавно подоспела.
 
 Что ж.

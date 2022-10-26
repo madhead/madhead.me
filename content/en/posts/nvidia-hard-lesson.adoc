@@ -50,7 +50,7 @@ Then I found https://superuser.com/questions/1325471/x-server-wont-start-after-n
 
 I had to do a reinstall.
 
-After the reinstall I just tried the second path: using https://bumblebee-project.org[Bumblbee].
+After the reinstall I just tried the second path: using https://github.com/Bumblebee-Project/Bumblebee[Bumblbee].
 There is also an https://wiki.archlinux.org/index.php/bumblebee[awesome article] on Arch Wiki that lead me to success.
 Even better, now I can use GPU just when I really need it, thus saving the battery, by uswing `optirun`.
 

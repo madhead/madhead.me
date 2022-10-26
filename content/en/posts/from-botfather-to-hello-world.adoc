@@ -471,7 +471,7 @@ These buttons can perform a wide variety of actions and can be customized for ea
 There are two main types of buttons:
 
 * **Reply Buttons** — used to provide a list of predefined text https://core.telegram.org/bots/features#keyboards[reply options].
-* **Inline Buttons** — used to offer quick navigation, shortcuts, URLs, games and https://core.telegram.org/bots/features##inline-keyboards[so much more].
+* **Inline Buttons** — used to offer quick navigation, shortcuts, URLs, games and https://core.telegram.org/bots/features#inline-keyboards[so much more].
 
 Using these buttons is as easy as attaching a https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.types.buttons/-reply-keyboard-markup/index.html[`ReplyKeyboardMarkup`] or an https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.types.buttons/-inline-keyboard-markup/index.html[`InlineKeyboardMarkup`] to your message.
 

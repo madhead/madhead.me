@@ -20,10 +20,6 @@ languages:
           name: tags
           url: /tags/
           weight: 2
-        - identifier: cv
-          name: cv
-          url: https://stackoverflow.com/cv/madhead
-          weight: 3
   ru:
     languageName: RU
     contentDir: content/ru
@@ -40,10 +36,6 @@ languages:
           name: теги
           url: /tags/
           weight: 2
-        - identifier: cv
-          name: cv
-          url: https://stackoverflow.com/cv/madhead
-          weight: 3
 
 enableRobotsTXT: true
 
@@ -101,10 +93,6 @@ menu:
       name: tags
       url: /tags/
       weight: 2
-    - identifier: cv
-      name: cv
-      url: /cv/
-      weight: 3
 
 security:
   exec:
