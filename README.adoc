@@ -2,13 +2,13 @@ ifdef::env-github[]
 ++++
 <!--suppress HtmlDeprecatedAttribute -->
 <p align="center">
-  <img src="https://github.com/madhead/madhead.me/actions/workflows/dead-links-check.yml/badge.svg" alt="Dead links">
+  <img src="https://github.com/madhead/madhead.me/actions/workflows/dead-links.yml/badge.svg" alt="Dead links">
 </p>
 ++++
 endif::[]
 ifndef::env-github[]
 [.text-center]
-image:https://github.com/madhead/madhead.me/actions/workflows/dead-links-check.yml/badge.svg[]
+image:https://github.com/madhead/madhead.me/actions/workflows/dead-links.yml/badge.svg[]
 endif::[]
 
 = madhead's blog
