@@ -5,18 +5,18 @@ tags:
   - telegram
 ---
 
-Great news everybody: a few days ago Telegram team updated their Bot API documentation!
-Among other things they now have an https://core.telegram.org/bots/tutorial[end-to-end tutorial] on bot creation process: starting from bot registration in https://t.me/BotFather[@BotFather], going all the way to database & deployment options.
+Great news, everybody: a few days ago, Telegram team updated their Bot API documentation!
+Among other things, they now have an https://core.telegram.org/bots/tutorial[end-to-end tutorial] on the bot creation process: starting from bot registration in https://t.me/BotFather[@BotFather], going all the way to database & deployment options.
 
 Unfortunately, it features Java, Maven, and https://github.com/rubenlagus/TelegramBots[rubenlagus/TelegramBots] library.
 
-So, I've decided to copycat it, upgrading the examples to Kotlin, Gradle and https://github.com/InsanusMokrassar/TelegramBotAPI[InsanusMokrassar/TelegramBotAPI]!
+So, I've decided to copycat it, upgrading the examples to Kotlin, Gradle, and https://github.com/InsanusMokrassar/TelegramBotAPI[InsanusMokrassar/TelegramBotAPI]!
 Read my version below 👇🏼
 
 [IMPORTANT]
 ====
 Parts of the text below are shamelessly copy-pasted from the https://core.telegram.org/bots/tutorial[original tutorial].
-But don't be tough on me: I respect copyright and authorship and in this case I'm appealing for the https://en.wikipedia.org/wiki/Fair_use[fair use doctrine], which, I believe, this article would fall into.
+But don't be tough on me: I respect copyright and authorship and in this case, I'm appealing for the https://en.wikipedia.org/wiki/Fair_use[fair use doctrine], which, I believe, this article would fall into.
 ====
 
 <!--more-->
@@ -24,7 +24,7 @@ But don't be tough on me: I respect copyright and authorship and in this case I'
 This guide will walk you through everything you need to know to build your first **Telegram Bot**.
 
 If you already know your way around some of the basic steps, you can jump directly to the part you're missing.
-Equivalent examples are available in https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go] and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript].
+Equivalent examples are available in https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go], and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript].
 
 * <<introduction, Introduction>>
 * <<getting-ready, Basic Tutorial>>
@@ -78,9 +78,9 @@ For the purposes of this guide, a similar bot from the https://core.telegram.org
 ### Obtain Your Bot Token
 
 In this context, a **token** is a string that authenticates your bot (not your account) on the bot API.
-Each bot has a unique token which can also be revoked at any time via https://t.me/botfather[@BotFather].
+Each bot has a unique token, which can also be revoked at any time via https://t.me/botfather[@BotFather].
 
-Obtaining a token is as simple as contacting https://t.me/botfather[@BotFather], issuing the `/newbot` command and following the steps until you're given a new token.
+Obtaining a token is as simple as contacting https://t.me/botfather[@BotFather], issuing the `/newbot` command, and following the steps until you're given a new token.
 You can find a step-by-step guide https://core.telegram.org/bots/features#creating-a-new-bot[here].
 
 Your token will look something like this:
@@ -92,15 +92,15 @@ Your token will look something like this:
 
 [WARNING]
 ====
-Make sure to save your token in a secure place, treat it like a password and **don't share it with anyone**.
+Make sure to save your token in a secure place, treat it like a password, and **don't share it with anyone**.
 ====
 
 ### Download an IDE
 
-To program in Java you'll need an https://en.wikipedia.org/wiki/Integrated_development_environment[IDE] — a special text editor that will let you write, compile and run your code.
+To program in Kotlin, you'll need an https://en.wikipedia.org/wiki/Integrated_development_environment[IDE] — a special text editor that will let you write, compile and run your code.
 In this tutorial, we'll use https://www.jetbrains.com/idea[IntelliJ IDEA] — there are several free, open source alternatives like https://www.eclipse.org/ide[Eclipse] or https://netbeans.apache.org/download/index.html[NetBeans] which work in the exact same way.
 
-You will also need a https://en.wikipedia.org/wiki/Java_Development_Kit[JDK], a software kit that allows your Java code to run.
+You will also need a https://en.wikipedia.org/wiki/Java_Development_Kit[JDK], a software kit that allows your Kotlin code to run.
 Most IDEs don't include a JDK, so you should download a version compatible with your operating system separately.
 You can find a free, open source version https://adoptium.net/temurin/releases[here].
 
@@ -114,7 +114,7 @@ You will just have to download a different IDE and software development kit.
 
 You can think of a framework as software that handles all the low-level logic for you, including the API calls, and lets you focus on your bot-specific logic.
 
-In this tutorial, we'll use https://github.com/InsanusMokrassar/TelegramBotAPI[InsanusMokrassar/TelegramBotAPI], but you can follow along with any equivalent implementation, since all the underlying methods are either similar or exactly the same.
+In this tutorial, we'll use https://github.com/InsanusMokrassar/TelegramBotAPI[InsanusMokrassar/TelegramBotAPI], but you can follow along with any equivalent implementation since all the underlying methods are either similar or exactly the same.
 
 [NOTE]
 ====
@@ -137,7 +137,7 @@ You can use the default value.
 We'll be using version __17__.
 * **Gradle DSL** — Select __Kotlin__ as well.
 * **Add Sample Code** — Leave this **selected**, it will generate some needed files for you.
-* **Advanced Settings > GroupId** — Use your reversed domain here, or __tutorial__ for the sake of this guide.
+* **Advanced Settings > GroupId** — Use your reversed domain here or __tutorial__ for the sake of this guide.
 * **Advanced Settings > ArtifactId** — You can use the default value.
 
 {{< figure src="//storage.googleapis.com/madheadme-static/posts/from-botfather-to-hello-world/001.png" class="align-center">}}
@@ -174,7 +174,7 @@ Your dependency management system will have a different name (or no name at all 
 
 If this looks scary, don't worry.
 We will only be using the `Main.kt` file and the `build.gradle.kts` file.
-In fact, to check that everything is working so far, double click on __Main__ and click on the small green arrow on the left of `fun main`, then select the first option (`Run 'MainKt'`).
+In fact, to check that everything is working so far, double-click on __Main__ and click on the small green arrow on the left of `fun main`, then select the first option (`Run 'MainKt'`).
 If you followed the steps correctly, __Hello World!__ should appear in the console below.
 
 ### Add Framework Dependency
@@ -201,10 +201,10 @@ With this tutorial, you'll be able to teach your bot basic behaviors, though mor
 
 ### Creating a Bot
 
-There are two mutually exclusive ways of https://core.telegram.org/bots/api#getting-updates[receiving updates] in your bot: either by **polling** for them, or by receiving them via a **webhook**.
+There are two mutually exclusive ways of https://core.telegram.org/bots/api#getting-updates[receiving updates] in your bot: either by **polling** for them or by receiving them via a **webhook**.
 
 Polling essentially means https://core.telegram.org/bots/api#getupdates[asking for the updates] in an endless loop, i.e. you pull the updates from Telegram servers.
-With https://core.telegram.org/bots/api#setwebhook[webhooks] updates are pushed into your bot by Telegram via HTTPS.
+With https://core.telegram.org/bots/api#setwebhook[webhooks], updates are pushed into your bot by Telegram via HTTPS.
 
 You decide which way suits you best, and the library provides you several methods to create bots depending on your choice.
 
@@ -224,21 +224,21 @@ suspend fun main(args: Array<String>) {                            // <1>
 }.
 {{< / highlight >}}
 
-. Add a `suspend` modifier to your `main` function, as the library makes a heavy use of https://kotlinlang.org/docs/coroutines-overview.html[coroutines].
-. It's better to pass the token as an argument for your program, then hardcoding it.
+. Add a `suspend` modifier to your `main` function, as the library makes heavy use of https://kotlinlang.org/docs/coroutines-overview.html[coroutines].
+. It's better to pass the token as an argument for your program than hard-coding it.
 . `telegramBotWithBehaviourAndLongPolling` returns a pair of values: https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.bot/index.html#-1167693203%2FClasslikes%2F-1982836883[the bot itself] and a https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-job/[`Job`].
-We're not very interested in the `bot` value, so we do not assign it to any variable, that's waht `_` means.
-And the `job` is useful for our purpose, read below.
+We're not very interested in the `bot` value, so we do not assign it to any variable, that's what `_` means.
+We'll use this job later, read below.
 . https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.updateshandlers/-flows-updates-filter/all-updates-flow.html[`allUpdatesFlow`] is a https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines.flow/-flow/[`Flow`], i.e. a lazy, potentially endless sequence of https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.types.update.abstracts/-update/index.html[`Updates`].
-Flows are used to listen or transform the values that __flow__ through it.
+Flows are used to listen to or transform the values that __flow__ through them.
 . Here we just listen for the values and print them.
 . This listening process should occur in a https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-coroutine-scope/[`CoroutineScope`].
-For this simple example we'll use a https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/[`GlobalScope`].
+For this simple example, we'll use a https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-global-scope/[`GlobalScope`].
 . Remember the job that we get at step #3?
-Here we wait for it's completion.
-And this job would never actually complete on its own, because the number of updates your bot potentially receives is unbound.
+Here we wait for its completion.
+And this job would never actually complete on its own because the number of updates your bot potentially receives is unbound.
 
-You might be confused by all this coroutines jobs, scopes, flows, and, especially, by the waiting of the completion of an endless loop — it sounds like a nonsense!
+You might be confused by all these coroutines, jobs, scopes, flows, and, especially, by the waiting for the completion of an endless loop — it sounds like nonsense!
 But those are the very basic concepts and patterns of Kotlin Coroutines.
 After finishing this tutorial you might want to https://kotlinlang.org/docs/coroutines-overview.html[read more] about them.
 
@@ -263,7 +263,7 @@ If nothing pops up, make sure you messaged the right bot and that the token you 
 
 ## Receiving Messages
 
-Every time someone sends a **private message** to your bot, the https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling/on-content-message.html[`onContentMessage`] callback will be called and you'll be able to handle the update (named `it`, if you don't override the name of the parameter), which contains the message, along with a great deal of other info which you can see detailed here.
+Every time someone sends a **private message** to your bot, the https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling/on-content-message.html[`onContentMessage`] callback will be called, and you'll be able to handle the update (named `it`, if you don't override the name of the parameter), which contains the message, along with a great deal of other info which you can see detailed here.
 
 Let's focus on two values for now:
 
@@ -286,7 +286,7 @@ Knowing this, we can make it a bit more clear in the **console output**.
 This is just a basic example – you can now play around with all the methods to see everything you can pull out of these objects.
 You can try `it.from.firstName`, `it.chat`, and dozens more.
 
-Knowing how to receive, process and print **incoming messages**, now it's time to learn how to **answer them**.
+Knowing how to receive, process, and print **incoming messages**, now it's time to learn how to **answer them**.
 
 [TIP]
 ====
@@ -313,12 +313,12 @@ suspend fun main(args: Array<String>) {
 }
 {{< / highlight >}}
 
-. As long as we don't build a complex behaviour for the bot here, simple `telegramBot` is enough for this example.
+. As long as we don't build a complex behavior for the bot here, a simple `telegramBot` is enough for this example.
 . For this example, we'll assume your ID is `1234`.
 You could get your real ID from the updates received in the previous steps, or by contacting https://t.me/myidbot[@myidbot]
 
 
-If you did everything correctly, your bot should text you Hello World! every time you launch your code.
+If you did everything correctly, your bot should text you __Hello World!__ every time you launch your code.
 Sending messages to groups or channels – assuming you have the relevant permissions – is as simple as replacing `1234` with the ID of the respective chat.
 
 [TIP]
@@ -352,8 +352,8 @@ suspend fun main(args: Array<String>) {
 }
 {{< / highlight >}}
 
-. Here we'll explore just another way to setup long polling and bot behaviour: https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder/build-behaviour-with-long-polling.html[`buildBehaviourWithLongPolling`].
-. https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling/on-content-message.html[`onContentMessage`] will be called for every message with __content__, e.g. text, stickers, pictures.
+. Here we'll explore just another way to set up long polling and bot behavior: https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder/build-behaviour-with-long-polling.html[`buildBehaviourWithLongPolling`].
+. https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling/on-content-message.html[`onContentMessage`] will be called for every message with __content__, e.g. text, stickers, and pictures.
 There are messages with no content as well, like https://core.telegram.org/bots/api#chatjoinrequest[join requests].
 . The https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.api.send/reply.html[`reply`] simply replies to a message.
 
@@ -416,10 +416,10 @@ bot.buildBehaviourWithLongPolling {
 }.join()
 {{< / highlight >}}
 
-The https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling/on-command.html[`onCommand`] is called whenever the bot receives a comand that is passed as a parameter to the `onCommand`.
+The https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.extensions.behaviour_builder.triggers_handling/on-command.html[`onCommand`] is called whenever the bot receives a command that is passed as a parameter to the `onCommand`.
 
 Next, let's add an https://kotlinlang.org/docs/extensions.html[extension] for the https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.types.message.abstracts/-common-message/index.html[`CommonMessage`] to check if it contains any commands.
-We'll use this extention as a __filter__ in the next step.
+We'll use this extension as a __filter__ in the next step.
 
 {{< highlight kotlin >}}
 fun CommonMessage<*>.hasCommands(): Boolean =
@@ -453,12 +453,12 @@ And that's it.
 Now the bot can **execute commands** and change its behavior accordingly.
 
 Naturally, this simplified logic will change the bot's behavior for **everyone** – not just the person who sent the command.
-This can be fun for this tutorial but **won't work in a production environment** – consider using a Map, dictionary or equivalent data structure to assign settings for individual users.
+This can be fun for this tutorial but **won't work in a production environment** – consider using a Map, dictionary, or equivalent data structure to assign settings for individual users.
 
 [TIP]
 ====
 Remember to always implement a few basic https://core.telegram.org/bots/features#global-commands[global commands].
-You can practice by implementing a simple feedback to the `/start` command, which we intentionally left out.
+You can practice by implementing simple feedback to the `/start` command, which we intentionally left out.
 ====
 
 ## Buttons and Keyboards
@@ -470,8 +470,8 @@ These buttons can perform a wide variety of actions and can be customized for ea
 
 There are two main types of buttons:
 
-* **Reply Buttons** — used to provide a list of predefined text https://core.telegram.org/bots/features#keyboards[reply options].
-* **Inline Buttons** — used to offer quick navigation, shortcuts, URLs, games and https://core.telegram.org/bots/features#inline-keyboards[so much more].
+* **Reply Buttons** — are used to provide a list of predefined text https://core.telegram.org/bots/features#keyboards[reply options].
+* **Inline Buttons** — are used to offer quick navigation, shortcuts, URLs, games and https://core.telegram.org/bots/features#inline-keyboards[so much more].
 
 Using these buttons is as easy as attaching a https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.types.buttons/-reply-keyboard-markup/index.html[`ReplyKeyboardMarkup`] or an https://tgbotapi.inmo.dev/docs/dev.inmo.tgbotapi.types.buttons/-inline-keyboard-markup/index.html[`InlineKeyboardMarkup`] to your message.
 
@@ -507,7 +507,7 @@ val secondMenuMarkup = inlineKeyboard {
 
 [TIP]
 ====
-You can place this code wherever you prefer, the important thing is making sure that keyboard variables are accessible from the method call that will send the new menu.
+You can place this code wherever you prefer, the important thing is to make sure that keyboard variables are accessible from the method call that will send the new menu.
 If you're confused by this concept and don't know where to put them, just paste them above the command processing flow.
 Or just look at the final code https://github.com/madhead/from-botfather-to-hello-world/blob/main/src/main/kotlin/Main.kt[here].
 ====
@@ -527,7 +527,7 @@ bot.sendMessage(
 ### Menu Trigger
 
 We could send a new menu for each new user, but for simplicity let's add a new command that will spawn a menu.
-We can achieve this by adding a new `onCommand("menu")` clause to the previous __behaviour block__.
+We can achieve this by adding a new `onCommand("menu")` clause to the previous __behavior block__.
 
 {{< highlight kotlin >}}
 onCommand("menu") {
@@ -573,7 +573,7 @@ You **must always** close new queries after processing them – if you don't, a 
 
 Processing in this context just means **executing the action** uniquely identified by the button, then **closing the query**.
 
-A very basic button handler could look something like:
+A very basic button handler could look something like this:
 
 {{< highlight kotlin >}}
 bot.buildBehaviourWithLongPolling() {
@@ -603,29 +603,28 @@ bot.buildBehaviourWithLongPolling() {
 {{< / highlight >}}
 
 With these handlers, whenever a button is tapped, your bot will automatically navigate between inline menus.
-Expanding on this concept allows for endless combinations of navigable submenus, settings and dynamic pages.
+Expanding on this concept allows for endless combinations of navigable submenus, settings, and dynamic pages.
 
 [#database]
 ## Database
 
 Telegram **does not** host an update database for you – once you process and consume an update, it will no longer be available.
-This means that features like user lists, message lists, current user inline menu, settings, etc.
-**have to be implemented and maintained** by bot developers.
+This means that features like user lists, message lists, current user inline menus, settings, etc. **have to be implemented and maintained** by bot developers.
 
 If your bot needs one of these features and you want to get started on **data persistence**, we recommend that you look into https://en.wikipedia.org/wiki/Serialization[serialization] practices and libraries for your language of choice, as well as available databases.
 
-Implementing a database is out of scope for this guide, however, several guides are available online for simple embedded **open source** software solutions like https://www.sqlite.org/index.html[SQLite], https://hsqldb.org[HyperSQL], https://db.apache.org/derby[Derby] and many more.
+Implementing a database is out of scope for this guide, however, several guides are available online for simple embedded **open source** software solutions like https://www.sqlite.org/index.html[SQLite], https://hsqldb.org[HyperSQL], https://db.apache.org/derby[Derby], and many more.
 
 [NOTE]
 ====
-Your language of choice will also influence which databases are available and supported – the list above assumes you followed this Java tutorial.
+Your language of choice will also influence which databases are available and supported – the list above assumes you followed this Kotlin tutorial.
 ====
 
 [#hosting]
 ## Hosting
 
 So far, your bot has been running on your **local machine** – your PC.
-While this may be good for **developing**, **testing** and **debugging**, it is not ideal for a production environment.
+While this may be good for **developing**, **testing**, and **debugging**, it is not ideal for a production environment.
 You'll want your bot to be available and responsive at all times, but your computer might not always be online.
 
 This can be done in four steps:
@@ -657,7 +656,7 @@ $ scp -r /TBot/ username@server_ip:/bots/TBotRemote/
 * **Run your application**
 +
 Depending on which language you chose, you might have to configure your server environment differently.
-If you chose Java, you just need to install a compatible JDK.
+If you chose Kotlin, you just need to install a compatible JDK.
 +
 {{< highlight shell >}}
 $ apt install openjdk-17-jre
@@ -679,7 +678,7 @@ Your bot is now online and users can interact with it at any time.
 [NOTE]
 ====
 To streamline and modularize this process, you could employ a specialized https://www.docker.com/resources/what-container/[docker container] or equivalent service.
-If you followed along in one of the equivalent examples (https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go] and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript]) you can find a detailed set of instructions to export and run your code https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main[here].
+If you followed along in one of the equivalent examples (https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.cs[C#], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.py[Python], https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/blob/main/TutorialBot.go[Go], and https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main/Nodejs[TypeScript]) you can find a detailed set of instructions to export and run your code https://gitlab.com/Athamaxy/telegram-bot-tutorial/-/tree/main[here].
 ====
 
 [#further-reading]
