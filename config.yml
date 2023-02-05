@@ -9,7 +9,7 @@ languages:
     contentDir: content/en
     weight: 1
     baseurl: https://madhead.me/
-    googleAnalytics: UA-101212543-1
+    googleAnalytics: G-SML2093FH8
     menu:
       sidebar:
         - identifier: posts
@@ -25,7 +25,7 @@ languages:
     contentDir: content/ru
     weight: 2
     baseurl: https://ru.madhead.me/
-    googleAnalytics: UA-101212543-2
+    googleAnalytics: G-7NTLF6MKJL
     menu:
       sidebar:
         - identifier: posts
