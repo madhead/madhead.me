@@ -71,6 +71,7 @@ params:
     instagram: m.a.d.h.e.a.d
     youtube: UCO2UZ6hUzjn9XQIdwwkcXJQ
     twitter: m_a_d_h_e_a_d
+    mastodon: "@madhead"
   comments:
     enable: true
   widgets:
