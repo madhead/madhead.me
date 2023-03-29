@@ -1,0 +1,210 @@
+---
+title: Serverless Stable Diffusion at cheat
+date: 2021-07-21T21:43:00+02:00
+tags:
+  - pet projects
+---
+
+## Intro
+
+## The problem
+
+Midjourney: Price, Restrictions (banned words, prompts, topics), No API. The best quality, though!
+DALLE: ???? -- take a close look, restrtictions.
+Google Collab + SD: Price, No API. Maybe some restrictions?
+EC2 and others: Price, fear to forget to stop
+Local Hardware Upgrade: Price, no want, wontuse much, local, no API
+Other services: they just resell the SD (or whatever model they use, doesn't matter) but at a higher price, API - questionable. Restrictions.
+Lambda?
+  https://betterprogramming.pub/deploying-a-pre-trained-stable-diffusion-model-in-aws-lambda-4a9799cb7113
+CPU:
+  https://github.com/openvinotoolkit/openvino
+  https://github.com/bes-dev/stable_diffusion.openvino
+
+How to choose:
+  https://towardsdatascience.com/a-complete-guide-to-ai-accelerators-for-deep-learning-inference-gpus-aws-inferentia-and-amazon-7a5d6804ef1c
+
+
+## Perfect solution
+
+Serverless. Of course there is a server but just for the moment you generate the image. No fear of foget to stop.
+As a result -- Cheap.
+No restrictions. Generate anything.
+Programmable.
+Accessible from anywhere.
+
+## The vision, the insight
+
+Serverless stable diffustion with selected models!
+
+## EC2 Instances overview
+
+- https://towardsdatascience.com/choosing-the-right-gpu-for-deep-learning-on-aws-d69c157d8c86
+- https://pages.awscloud.com/rs/112-TZM-766/images/AL-ML%20for%20Startups%20-%20Select%20the%20Right%20ML%20Instance.pdf
+
+Draw a plot with mem / cpu / gpu
+Generations
+
+====
+Basically, P and G
+
+>There are two families of GPU instances — the P family and the G family of EC2 instances and the chart below shows the various instance generations and instance sizes.
+
+gpu families.webp
+
+P2, P3, P4, G3, G4, G5
+
+>Historically P instance type represented GPUs better suited for High-performance computing (HPC) workloads, characterized by their higher performance (higher wattage, more cuda cores) and support for double precision (FP64) used in scientific computing. G instance types had GPUs better suited for graphics and rendering, characterized by their lack of double precision and lower cost/performance ratio (Lower wattage, smaller number of cuda cores).
+
+>P instance type is still recommended for HPC workloads and demanding machine learning training workloads and I recommend G instance type for machine learning inference deployments and less compute intensive training.
+
+>The number next to the letter (P3, G5) represent the instance generation. Higher the number, the newer the instance type is. 
+
+gpu-6.png
+
+gpu-15.png
+
+
+DONT BOTHJER READERS WITH THIS. JUST CHOOSE THE CHEAPEST.
+G4? G5? G5G?
+
+API Name	    RAM	      vCPUs 	GPUs	GPU model	              GPU RAM	Price
+g5g.xlarge 	  8.0 GiB	  4 vCPUs 	1 	NVIDIA T4G Tensor Core	16 GiB 	$0.5254 hourly
+g4dn.xlarge 	16.0 GiB	4 vCPUs 	1 	NVIDIA T4 Tensor Core	  16 GiB 	$0.6580 hourly
+g5g.2xlarge 	16.0 GiB	8 vCPUs 	1 	NVIDIA T4G Tensor Core	16 GiB 	$0.6955 hourly
+g4dn.2xlarge 	32.0 GiB	8 vCPUs 	1 	NVIDIA T4 Tensor Core	  16 GiB 	$0.9400 hourly
+g5.xlarge 	  16.0 GiB	4 vCPUs 	1 	NVIDIA A10G	            24 GiB 	$1.2580 hourly
+g5.2xlarge 	  32.0 GiB	8 vCPUs 	1 	NVIDIA A10G	            24 GiB 	$1.5156 hourly
+
+
+inf1.xlarge - 0.2 hourly!!!
+
+AMI - AWS DLAMI
+  https://docs.aws.amazon.com/dlami/latest/devguide/what-is-dlami.html
+
+Use more space! Basic setup is already 17 gigs! Where would you put models?
+
+CUDA already installed. Otherwise get one: https://developer.nvidia.com/cuda-downloads
+
+## Amazon Elastic Inference?????
+
+EI accelerator memory – 2 GB, 4 GB, 8 GB
+Prob too small 8 gigs?
+Not now!
+
+### AWS Inferentia???
+
+Nope
+
+## Elastic Graphics?
+
+https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/elastic-graphics.html?icmpid=docs_ec2_console#elastic-graphics-pricing
+
+Forget!
+
+Elastic Graphics limitations
+
+Before you start using Elastic Graphics accelerators, be aware of the following limitations:
+
+    You can attach accelerators only to Windows instances with Microsoft Windows Server 2012 R2 or later. Linux instances are currently not supported.
+
+
+## Jupiter Setup for playground
+
+https://docs.aws.amazon.com/dlami/latest/devguide/setup-jupyter.html
+
+DO NOT do apt UPGRADE on G5G -- breaks NVIDIA. Just do apt update.
+
+apt install jupyter-core jupyter-notebook
+
+https://docs.aws.amazon.com/dlami/latest/devguide/setup-jupyter-config.html
+
+pip install --upgrade ipywidgets
+https://github.com/NVIDIA-AI-IOT/trt_pose/issues/77#issuecomment-736548397
+
+PyTorch is the problem in base AMI: https://github.com/pytorch/pytorch/issues/30664
+  Compile from source?
+  Use PyTorch AMI
+
+https://discuss.pytorch.org/t/cuda-not-available-on-aarch64/169726
+
+Install conda
+
+
+https://github.com/pytorch/pytorch#from-source
+
+https://github.com/jetsonhacks/buildLibrealsense2TX/issues/13#issuecomment-573976359
+https://github.com/jetsonhacks/buildLibrealsense2TX/issues/13#issuecomment-573976359 ----- BEFORE THE BUILD (not in the middle. If in the middle -- it would already capture some wrong pathes, so may not work)
+https://discuss.pytorch.org/t/pytorch-cuda-11-4/137900/3 - ok, no worries
+
+
+
+Params could be taken here: https://platform.stability.ai/rest-api#tag/v1generation/operation/textToImage
+  sampler
+  samples (number of images)
+  seed
+  steps
+  clip_guidance_preset
+  config scale (guidance)
+  prompt
+  width
+  height
+
+
+
+https://huggingface.co/models?library=diffusers
+https://dev.to/dstack/running-stable-diffusion-locally-in-cloud-with-diffusers-dstack-41n0
+
+
+
+
+https://docs.aws.amazon.com/sagemaker/latest/dg/async-inference.html?????
+
+If you really want to get the best performance out of your GPUs, NVIDIA offers TensorRT, a model compiler for inference deployment. Does additional optimizations to a trained model, and a full list is available on NVIDIA’s TensorRT website. The key optimizations to note are:
+
+
+
+## Plan
+
+### Try the smallest G5G instance. -- Pretty much fail.
+
+### Try the smallest G5G instance with pre-build Torch -- success!
+  Install goes fine and smooth
+  Install contains (`conda environments`) a Conda env (`base`)
+
+  Activating (`source activate base`) and testing:
+
+    import torch
+
+    print(torch.__version__)           # 1.9.0
+    print(torch.version.cuda)           # 11.1
+    print(torch.cuda.is_available())     #True
+
+  pip list -- good!
+
+  notebook works out of the box!!!
+
+  !pip install diffusers==0.14.0 transformers==4.27.4 ipywidgets
+
+  Probably accellerate as well
+
+  And it works at 3.38 it/s! Success!
+
+
+
+
+
+Try bigger G5G instances to compile the Torch
+Try G5G + pre-build torch
+If of -- get the compiled stuff and try again on the smallest G5G
+Try Intel
+Play with the models
+Go serverless
+SageMaker
+SageMaker Async / Serverless Inference
+Compare prices
+Compare speed
+TensorRT additional compilation
+
+
+SageMaker is an option but maybe later
