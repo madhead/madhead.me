@@ -1,0 +1,855 @@
+---
+title: 'PR preview environments with Neon, GitHub Actions, and AWS Lambda'
+date: 2023-05-02T18:00:00+02:00
+tags:
+  - github actions
+  - postgresql
+  - ci
+  - aws
+  - aws lambda
+  - neon
+  - python
+---
+
+You might have heard about preview environments (AKA dynamic, or ephemeral environments) in the scope of software engineering and, particularly, this term is used when speaking about the SDLC.
+
+A preview environment — as opposed to a permanent one, like "Production", or "TST", or whatever you call them — is a short-lived environment, usually bound to a pull request.
+It is created on-demand when the PR is created; and destroyed when the PR is closed.
+It hosts a copy of the application and is used to test the changes introduced by the pull request.
+
+If you need more information, I encourage you to jump around a few articles on the Web to grasp the idea before continuing.
+I won't go into details here, but instead, I'll be focusing on the most challenging aspect of preview environments…
+
+The database.
+
+<!--more-->
+
+## Contents
+
+* <<problem, The tragedy of databases in preview environments>>
+* <<neon, Meet Neon>>
+* <<neonbranch, Exploring Neon branching with GitHub Actions and AWS Lambda>>
+
+[#problem]
+## The tragedy of databases in preview environments
+
+Materials about preview environments tend to cast little light on the database, leaving you with the approximate directions, like __"create a copy of the database"__, or __"use a database per PR"__, but no advice on how to achieve that.
+And for a reason!
+
+First of all, everyone’s application is indeed different, and there’s no one-size-fits-all solution.
+
+But the main reason, IMO, is that a database is very different from an application and it's hard to copy it.
+Databases are persistent and stateful, while applications are ephemeral and stateless.
+Copying apps is the same as redeploying or scaling them, maybe with a different configuration.
+Copying databases is always a trick.
+
+What's even worse, is that databases historically combine both storage and compute in them!
+I mean, a typical database consists of its data, represented as actual files, and a database engine, which is an application process on its own.
+Thus, copying a database is at least twice as hard as copying an application.
+Simple math!
+
+The options here range from cloning the database using dump / restore to using no copies at all, i.e. a shared DB for all the preview environments.
+Let's roughly compare them.
+
+{set:cellbgcolor!}
+[cols="4*^.^"]
+|===
+| | Dump / restore | Migration scripts | Shared DB
+
+|Complexity
+{set:cellbgcolor!}
+|High
+{set:cellbgcolor:#FFE485}
+|Medium
+{set:cellbgcolor:#FFAD8F}
+|No
+{set:cellbgcolor:#ADFFCE}
+
+|Isolation
+{set:cellbgcolor!}
+|High
+{set:cellbgcolor:#ADFFCE}
+|High
+{set:cellbgcolor:#ADFFCE}
+|No
+{set:cellbgcolor:#FFE485}
+
+|Data freshness
+{set:cellbgcolor!}
+|Medium
+{set:cellbgcolor:#FFAD8F}
+|No
+{set:cellbgcolor:#FFE485}
+|High
+{set:cellbgcolor:#ADFFCE}
+
+|Automation
+{set:cellbgcolor!}
+|Low
+{set:cellbgcolor:#FFE485}
+|Medium
+{set:cellbgcolor:#FFAD8F}
+|No
+{set:cellbgcolor:#ADFFCE}
+
+|===
+
+Here, **complexity** means the amount of effort required to implement the solution.
+Obviously, a shared environment requires no effort; migration scripts require creating a fresh database and running the migrations; and dump / restore requires creating a fresh database, creating a dump, transferring it to the fresh database, and restoring it.
+Don't get me wrong, it's not impossible, it's just disproportionately hard and slow.
+
+Data **isolation** is high for both dump / restore and migration scripts approaches because each preview environment has its own database.
+A shared database, on the other hand, is not isolated at all.
+
+Data isolation is highly correlated with the ability to test and preview **schema modifications**.
+Actually, it's the same thing, I just want to highlight it, because it's important.
+If you have a shared database, you can't easily modify the schema without breaking others.
+However, if you have a dedicated database, you can do whatever you want with it.
+The ability to test and preview schema modifications is a huge advantage of preview environments because it allows you to test the migrations before applying them to the production database.
+
+Isolation is the opposite of **data freshness**.
+I call it the ability for the preview environment to have the latest data from the upstream database.
+A shared database has the freshest data because it's the same database.
+Dump / restore approach could provide fresh data as well, especially if you dump and restore the database on every PR.
+Migration scripts are the worst here because they don't provide any data fresh data at all.
+Only the data captured in the migration / seed scripts would be available.
+
+Migration scripts approach is somewhat **automated**.
+In the best-case scenario, you would have a script that creates a fresh database (e.g. a Terraform or Helm), and a script that runs the migrations (e.g. Rails Migrations or Liquibase).
+Dumping and restoring is less automated because most probably, it would involve a bash scripting with, let's say, `pg_dump` and `pg_restore` commands.
+No copy approach requires no automation at all.
+
+Compromises, compromises, compromises…
+As you see, you trade complexity for convenience.
+And because of that and because deep data isolation is rarely required, and because schema modification could be arranged manually, I suppose most projects start from a shared DB approach and never move further.
+
+[#neon]
+## Meet Neon
+
+Now, after such a long introduction, this section would be ridiculously (in a good way) short, even in my wordy style.
+
+Imagine there is a PostgreSQL database, that is:
+
+* Fully managed
+* Serverless
+* Autoscalable
+* Auto-suspendable
+* Separates storage and compute
+* Branches in a second with a single button click or API call
+* And, yes, provides REST API for everything
+* Provides generous free tier to get you started
+* Well-documented
+
+It exists, and it is https://neon.tech[Neon].
+
+Because of the unique architecture, with separated storage and compute, Neon enables instant copy-on-write branching.
+You could create a branch, i.e. a copy of the database, from virtually any point in time in the upstream database, and it would be created in seconds.
+It means, that you could branch off the production database, with the latest data, and still have full isolation.
+Being serverless also means that Neon is very elastic, it can scale up and down, and even suspend the compute completely when it's not used.
+On top of that, Neon provides a REST API for everything, so you can automate the whole process.
+
+It's simple to use, it's highly isolated, it provides branches off the latest data, and it's easily automatable.
+It's perfect for preview environments.
+
+{set:cellbgcolor!}
+[cols="5*^.^"]
+|===
+| | Dump / restore | Migration scripts | Shared DB | Neon
+
+|Complexity
+{set:cellbgcolor!}
+|High
+{set:cellbgcolor:#FFE485}
+|Medium
+{set:cellbgcolor:#FFAD8F}
+|No
+{set:cellbgcolor:#ADFFCE}
+|Low
+{set:cellbgcolor:#ADFFCE}
+
+|Isolation
+{set:cellbgcolor!}
+|High
+{set:cellbgcolor:#ADFFCE}
+|High
+{set:cellbgcolor:#ADFFCE}
+|No
+{set:cellbgcolor:#FFE485}
+|High
+{set:cellbgcolor:#ADFFCE}
+
+|Data freshness
+{set:cellbgcolor!}
+|Medium
+{set:cellbgcolor:#FFAD8F}
+|No
+{set:cellbgcolor:#FFE485}
+|High
+{set:cellbgcolor:#ADFFCE}
+|High
+{set:cellbgcolor:#ADFFCE}
+
+|Automation
+{set:cellbgcolor!}
+|Low
+{set:cellbgcolor:#FFE485}
+|Medium
+{set:cellbgcolor:#FFAD8F}
+|No
+{set:cellbgcolor:#ADFFCE}
+|High
+{set:cellbgcolor:#ADFFCE}
+
+|===
+
+Drawbacks?
+Well, it's in the technical preview stage yet.
+
+I don't see a point in repeating the docs here, so here are some rabbit holes for you:
+
+* https://neon.tech/docs/introduction/about[What is Neon?]
+* https://neon.tech/branching[Instant branching for Postgres]
+* https://neon.tech/docs/introduction/branching[Branching documentation]
+* https://neon.tech/docs/introduction/architecture-overview[Neon architecture overview]
+* https://neon.tech/docs/introduction/compute-lifecycle[Compute lifecycle]
+* https://neon.tech/docs/introduction/autoscaling[Autoscaling]
+* https://youtu.be/jjRasfbeYHk[Neon Developer workflow using Vercel and Github Actions]
+
+[#neonbranch]
+## Exploring Neon branching with GitHub Actions and AWS Lambda
+
+Link for the impatient ones: https://github.com/madhead/neonbranch/[madhead/neonbranch].
+
+Imagine an overengineered rock-paper-scissors game, storing game rules in a database and providing a REST API to calculate the winner.
+The API is of no interest today, so it's just an AWS Lambda, implemented in Python and deployed with CDK.
+Meet the database:
+
+{set:cellbgcolor!}
+[%header, format="csv", cols="3*^.^"]
+|===
+
+player1,player2,winner
+rock,rock,NULL
+rock,paper,paper
+rock,scissors,rock
+paper,rock,paper
+paper,paper,NULL
+paper,scissors,scissors
+scissors,rock,rock
+scissors,paper,scissors
+scissors,scissors,NULL
+
+|===
+
+Now, imagine we're working on two new features.
+The first one expands the game with Spock and lizard, and the second one adds textual descriptions for the outcomes:
+
++++<details><summary>+++
+**What would the database look like**
++++</summary><div>+++
+{set:cellbgcolor!}
+[cols="4*^.^"]
+|===
+| player1 | player1 | winner | description{set:cellbgcolor:#FFE485}
+
+|rock
+{set:cellbgcolor!}
+|rock
+{set:cellbgcolor!}
+|NULL
+{set:cellbgcolor!}
+|It's a tie
+{set:cellbgcolor:#FFE485}
+
+|rock
+{set:cellbgcolor!}
+|paper
+{set:cellbgcolor!}
+|paper
+{set:cellbgcolor!}
+|Paper covers rock
+{set:cellbgcolor:#FFE485}
+
+|rock
+{set:cellbgcolor!}
+|scissors
+{set:cellbgcolor!}
+|rock
+{set:cellbgcolor!}
+|Rock crushes scissors
+{set:cellbgcolor:#FFE485}
+
+|paper
+{set:cellbgcolor!}
+|rock
+{set:cellbgcolor!}
+|paper
+{set:cellbgcolor!}
+|Paper covers rock
+{set:cellbgcolor:#FFE485}
+
+|paper
+{set:cellbgcolor!}
+|paper
+{set:cellbgcolor!}
+|NULL
+{set:cellbgcolor!}
+|It's a tie
+{set:cellbgcolor:#FFE485}
+
+|paper
+{set:cellbgcolor!}
+|scissors
+{set:cellbgcolor!}
+|scissors
+{set:cellbgcolor!}
+|Scissors cuts paper
+{set:cellbgcolor:#FFE485}
+
+|scissors
+{set:cellbgcolor!}
+|rock
+{set:cellbgcolor!}
+|rock
+{set:cellbgcolor!}
+|Rock crushes scissors
+{set:cellbgcolor:#FFE485}
+
+|scissors
+{set:cellbgcolor!}
+|paper
+{set:cellbgcolor!}
+|scissors
+{set:cellbgcolor!}
+|Scissors cuts paper
+{set:cellbgcolor:#FFE485}
+
+|scissors
+{set:cellbgcolor!}
+|scissors
+{set:cellbgcolor!}
+|NULL
+{set:cellbgcolor!}
+|It's a tie
+{set:cellbgcolor:#FFE485}
+
+|rock
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+|☝️ Feature: descriptions
+{set:cellbgcolor!}
+
+|rock
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|rock
+{set:cellbgcolor:#D6F2AA}
+.15+|👈 Feature: Spock and lizard
+{set:cellbgcolor!}
+
+|paper
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+|paper
+{set:cellbgcolor:#D6F2AA}
+
+|paper
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+
+|scissors
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+
+|scissors
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+
+|spock
+{set:cellbgcolor:#D6F2AA}
+|rock
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+
+|spock
+{set:cellbgcolor:#D6F2AA}
+|paper
+{set:cellbgcolor:#D6F2AA}
+|paper
+{set:cellbgcolor:#D6F2AA}
+
+|spock
+{set:cellbgcolor:#D6F2AA}
+|scissors
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+
+|spock
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+|NULL
+{set:cellbgcolor:#D6F2AA}
+
+|spock
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|rock
+{set:cellbgcolor:#D6F2AA}
+|rock
+{set:cellbgcolor:#D6F2AA}
+
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|paper
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|scissors
+{set:cellbgcolor:#D6F2AA}
+|scissors
+{set:cellbgcolor:#D6F2AA}
+
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|spock
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|lizard
+{set:cellbgcolor:#D6F2AA}
+|NULL
+{set:cellbgcolor:#D6F2AA}
+
+|===
++++</div></details>+++
+
+We have these changes captured in Liquibase changelogs.
+The question is: how do we organize the CI pipelines?
+
+### Events that trigger workflows
+
+Remember, preview environments are ephemeral and bound to the PRs.
+So, let's search for the appropriate triggers in https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request[Events that trigger workflows].
+
+Three things could happen to a PR in regard to our scenario:
+
+1. It could be https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads?actionType=opened#pull_request[`opened`] or https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads?actionType=reopened#pull_request[`reopened`]
+2. It could be https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads?actionType=synchronize#pull_request[`synchronized`]
+3. It could be https://docs.github.com/en/webhooks-and-events/webhooks/webhook-events-and-payloads?actionType=closed#pull_request[`closed`]
+
+When a PR is opened or reopened, we should create a new Neon branch, when a PR is closed we should delete the associated branch.
+When a PR is synchronized, we run the same workflow as when a PR is opened or reopened, as it would be made idempotent.
+
+### Workflows
+
+So, we'll need three workflows:
+
++++<details><summary>+++
+**.github/workflows/pr-env-create.yml**
++++</summary><div>+++
+[source,yaml]
+----
+name: Create PR environment
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+
+jobs:
+  pr-env-create:
+    steps:
+      - id: deploy
+        uses: ./.github/actions/deploy
+        name: Deploy
+        with:
+          environment: pr-${{ github.event.number }}
+          neon_project: ${{ vars.NEON_PROJECT }}
+          neon_token: ${{ secrets.NEON_TOKEN }}
+----
++++</div></details>+++
+
++++<details><summary>+++
+**.github/workflows/pr-env-sync.yml**
++++</summary><div>+++
+[source,yaml]
+----
+name: Synchronize PR environment
+
+on:
+  pull_request:
+    types:
+      - synchronize
+
+# same as above
+----
++++</div></details>+++
+
++++<details><summary>+++
+**.github/workflows/pr-env-destroy.yml**
++++</summary><div>+++
+[source,yaml]
+----
+name: Destroy PR environment
+
+on:
+  pull_request:
+    types:
+      - closed
+
+jobs:
+  pr-env-create:
+    steps:
+      - uses: ./.github/actions/destroy
+        name: Destroy
+        with:
+          environment: pr-${{ github.event.number }}
+          neon_project: ${{ vars.NEON_PROJECT }}
+          neon_token: ${{ secrets.NEON_TOKEN }}
+----
++++</div></details>+++
+
+I extracted the common logic into two actions, `deploy` and `destroy`:
+
+#### Deploy action
+
++++<details><summary>+++
+**.github/actions/deploy/action.yml**
++++</summary><div>+++
+[source,yaml]
+----
+name: Deploy
+description: Deploy the lambda
+
+inputs:
+  environment:
+  neon_project:
+  neon_token:
+
+outputs:
+  URL:
+  db_host:
+  db_user:
+  db_password:
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - run: python -m venv .venv
+      working-directory: deploy
+      shell: bash
+
+    - run: |
+        source .venv/bin/activate
+        python -m pip install -r requirements.txt
+      working-directory: deploy
+      shell: bash
+
+    - id: branch
+      run: |
+        source .venv/bin/activate
+        python branch.py
+      working-directory: deploy
+      shell: bash
+      env:
+        NEON_TOKEN: ${{ inputs.neon_token }}
+        NEON_PROJECT: ${{ inputs.neon_project }}
+        NEON_BRANCH: ${{ inputs.environment }}
+
+    - uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: 17
+    - run: ./gradlew update
+      working-directory: migrations
+      shell: bash
+      env:
+        NEON_HOST: ${{ steps.branch.outputs.db_host }}
+        NEON_DATABASE: ${{ inputs.neon_database }}
+        NEON_USER: ${{ steps.branch.outputs.db_user }}
+        NEON_PASSWORD: ${{ steps.branch.outputs.db_password }}
+----
++++</div></details>+++
+
+The logic is pretty simple:
+
+1. We install Python
+2. We set up a virtual environment and install the dependencies
+3. We run a `branch.py` script which we'll see in a moment
+4. We install Java to run Liquibase
+5. We run Liquibase
+
+#### Destroy action
+
++++<details><summary>+++
+**.github/actions/destroy/action.yml**
++++</summary><div>+++
+[source,yaml]
+----
+name: Destroy
+description: Destroy the preview environment
+
+inputs:
+  environment:
+  neon_project:
+  neon_token:
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - run: python -m venv .venv
+      working-directory: deploy
+      shell: bash
+
+    - run: |
+        source .venv/bin/activate
+        python -m pip install -r requirements.txt
+      working-directory: deploy
+      shell: bash
+
+    - run: |
+        source .venv/bin/activate
+        python unbranch.py
+      working-directory: deploy
+      shell: bash
+      env:
+        NEON_TOKEN: ${{ inputs.neon_token }}
+        NEON_PROJECT: ${{ inputs.neon_project }}
+        NEON_BRANCH: ${{ inputs.environment }}
+----
++++</div></details>+++
+
+We just run a different script, `unbranch.py`.
+
+### Automation scripts
+
+Let's extract Neon API calls into a separate Python module:
+
++++<details><summary>+++
+**neon.py**
++++</summary><div>+++
+[source,python]
+----
+import os
+import time
+
+import requests
+
+base_url = 'https://console.neon.tech/api/v2'
+headers = {
+    'Accept': 'application/json',
+    'Authorization': f"Bearer {os.environ['NEON_TOKEN']}"
+}
+
+
+def find_project(project_name: str) -> dict:
+    projects = requests.get(
+        url=f"{base_url}/projects",
+        headers=headers,
+    ).json()['projects']
+
+    return next(project for project in projects if project['name'] == project_name)
+
+
+def delete_branch(project: dict, name: str) -> dict:
+    branches = requests.get(
+        url=f"{base_url}/projects/{project['id']}/branches",
+        headers=headers,
+    ).json()['branches']
+    branch = next((branch for branch in branches if branch['name'] == name))
+    requests.delete(
+        url=f"{base_url}/projects/{project['id']}/branches/{branch['id']}",
+        headers=headers,
+    )
+
+
+def find_branches(project: dict, name: str) -> (dict, dict):
+    branches = requests.get(
+        url=f"{base_url}/projects/{project['id']}/branches",
+        headers=headers,
+    ).json()['branches']
+
+    primary_branch = next(branch for branch in branches if branch['primary'])
+    if name:
+        branch = next((branch for branch in branches if branch['name'] == name), None)
+    else:
+        branch = primary_branch
+
+    return primary_branch, branch
+
+
+def get_operation_details(project: dict, operation_id: str) -> dict:
+    return requests.get(
+        url=f"{base_url}/projects/{project['id']}/operations/{operation_id}",
+        headers=headers,
+    ).json()['operation']
+
+
+def create_branch(project: dict, parent: dict, name: str) -> dict:
+    result = requests.post(
+        url=f"{base_url}/projects/{project['id']}/branches",
+        headers=headers,
+        json={
+            'endpoints': [
+                {
+                    'type': 'read_write'
+                }
+            ],
+            'branch': {
+                'parent_id': parent['id'],
+                'name': name,
+            }
+        },
+    ).json()
+    operations = result['operations']
+
+    for operation in operations:
+        while True:
+            operation_details = get_operation_details(project, operation['id'])
+            if operation_details['status'] == 'finished':
+                break
+            else:
+                time.sleep(5)
+
+    return result['branch']
+
+
+def find_endpoint(project: dict, branch: dict) -> dict:
+    endpoints = requests.get(
+        url=f"{base_url}/projects/{project['id']}/endpoints",
+        headers=headers,
+    ).json()['endpoints']
+
+    return next(endpoint for endpoint in endpoints if endpoint['branch_id'] == branch['id'])
+
+
+def find_role(project: dict, branch: dict) -> dict:
+    roles = requests.get(
+        url=f"{base_url}/projects/{project['id']}/branches/{branch['id']}/roles",
+        headers=headers,
+    ).json()['roles']
+
+    return next(role for role in roles if not role['protected'])
+
+
+def get_password(project: dict, branch: dict, role: dict) -> str:
+    return requests.get(
+        url=f"{base_url}/projects/{project['id']}/branches/{branch['id']}/roles/{role['name']}/reveal_password",
+        headers=headers,
+    ).json()['password']
+
+----
++++</div></details>+++
+
+As you see, just a bunch of functions to call Neon API.
+Let's see how we use them in our scripts.
+
++++<details><summary>+++
+**branch.py**
++++</summary><div>+++
+[source,python]
+----
+import os
+
+import github
+import neon
+
+if __name__ == '__main__':
+    project = neon.find_project(os.environ['NEON_PROJECT'])
+    primary_branch, branch = neon.find_branches(project, os.environ.get('NEON_BRANCH'))
+
+    if not branch:
+        branch = neon.create_branch(project, primary_branch, os.environ.get('NEON_BRANCH'))
+
+    endpoint = neon.find_endpoint(project, branch)
+    role = neon.find_role(project, branch)
+    password = neon.get_password(project, branch, role)
+
+    github.mask(endpoint['host'])
+    github.mask(role['name'])
+    github.mask(password)
+
+    github.set_output('db_host', endpoint['host'])
+    github.set_output('db_user', role['name'])
+    github.set_output('db_password', password)
+
+----
++++</div></details>+++
+
++++<details><summary>+++
+**unbranch.py**
++++</summary><div>+++
+[source,python]
+----
+import os
+
+import neon
+
+if __name__ == '__main__':
+    neon.delete_branch(
+        neon.find_project(os.environ['NEON_PROJECT']),
+        os.environ['NEON_BRANCH'],
+    )
+
+----
++++</div></details>+++
+
+While `unbranch.py` is pretty straightforward, `branch.py` is a bit more complicated.
+First, we find the project by its name.
+Then we find the primary branch we fork off and the branch for the preview environment.
+If the branch doesn't exist, we create it.
+The creation of a branch is an asynchronous operation, so we have to wait for it to finish.
+Then we find the endpoint and the role for the new branch and get the password for the role.
+Finally, we mask the sensitive data and set the output variables for GitHub Actions.
+They are used later by other scripts, not shown here.
+
+And that's it!
+We now have a fully automated workflow that creates a new database branch for each environment and deletes it when the environment is deleted.
+
+Explore the demo repository, https://github.com/madhead/neonbranch/[madhead/neonbranch] to learn more tricks, like https://docs.github.com/en/actions/using-jobs/using-environments-for-jobs#example-using-output-as-url[this]:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/neonbranch/002.png" class="align-center">}}
+
+Two more things before you go.
+
+First, there is an official Neon GitHub Action, but with a slightly different logic and use case: https://github.com/neondatabase/create-branch-action[neondatabase/create-branch-action].
+
+Second, if you're using Vercel, there is an article for that: https://neon.tech/blog/branching-with-preview-environments[A database for every preview environment using Neon, GitHub Actions, and Vercel].
