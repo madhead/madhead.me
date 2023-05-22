@@ -17,7 +17,7 @@ jobs:
           - https://ru.madhead.me
     steps:
       - name: ${{ matrix.site }}
-        uses: ruzickap/action-my-broken-link-checker@v2.3.1
+        uses: ruzickap/action-my-broken-link-checker@v2.3.2
         with:
           url: ${{ matrix.site }}
           cmd_params: >-
