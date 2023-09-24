@@ -1,0 +1,39 @@
+---
+title: SVG Maps TODO
+date: 2023-09-24T22:44:00+02:00
+tags:
+  - gis
+  - osm
+  - maps
+---
+
+
+<!--more-->
+
+
+Need SVG map for what (display product)
+
+Options:
+  MabBox GL / Maputnik (no SVG export)
+  map machine.de (ebat!!!!!! expensive (2K for a map thanks no))
+  Maperitive (seems to be buggy)
+  QGIS
+
+QGIS
+  Default OSM -- raster tiles, not vector
+
+  Need vector tiles!
+    https://wiki.openstreetmap.org/wiki/Vector_tiles
+    No free vector tiles server?
+
+    OpenMapTiles!
+  
+  Vector tiles with styles?
+
+  YESS!!!
+
+OMT
+  Load map
+  Create style with maputnik
+  Configure QGIS
+  Export!
