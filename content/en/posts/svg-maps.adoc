@@ -37,3 +37,68 @@ OMT
   Create style with maputnik
   Configure QGIS
   Export!
+
+Preamble: styling & tiling
+  Many styling option out there, but the one I found the easiets is Mapbox Style.
+  It allows to describe a style in JSON format, as a set of layers.
+  Layers represent different.. things on the map. Like roads, buildings, water, etc.
+  Layers define how to render the data, e.g. line styles, fillings, colors, ets. If you ever worked with SVG, that's the same as in Fill & Stroke panel.
+  Layers match the underlayng map data based on the expressions. E.g. you could match rivers with an expression like class == river and apply a specific style to them.
+  The data that is not matched by any layer is not rendered at all.
+  
+  Mapbox styles are applied to Mapbox Tiles. So you need vector tiles in Mapbox format. Sometimes they come in a form of mbtile file, but beware it could contain raster data.
+
+Preabmle: tooling
+  Many tools are our there, but as we are going to use Mapbox Style, we need a tool that supports it.
+  There is a mapbox studio, but it's a web app and it's not free.
+  There is a free tool Maputnik to edit those styles, but it doesn't support SVG export.
+  And there is a QGIS, swiss army knife of GIS, that supports Mapbox tiles and styles, can export SVGs and is free!
+
+Options 0 (not recommended)
+  Download SVG from OSM
+  Dont't just download SVG from OSM: big, not stylyble
+
+  Download data (.osm and .osm.pbf) from OSM
+  Dont's just download data (.osm and .osm.pbf) from OSM and import in QGIS: big, slow, not stylyble with Maputnik / MapBox GL
+
+The Easiest option:
+  Install MapTiler Plugin in QGIS
+  Create MapTiler account
+  Get the key
+  Configure QGIS
+  Voila!
+  It's fast. It supports MapBox GL styles out of the box. It's free for small maps.
+  But pay attention! THE FREE PLAN IS NOT FOR COMMECIAL USE! (https://www.maptiler.com/cloud/pricing)
+  This option would give you results fast and let's you play around. If you want a more sustainable approach, without depending on a cloud serter and without the commercial use restriction read on.
+  Another downside: Toners hatched areas give lots of garbage in the SVG. Need to filter it out before the expoert.
+
+Easy option:
+  Download mbtiles from MapTiler https://data.maptiler.com/downloads/planet
+  But again:
+    Free download is available only for non-commercial personal projects and evaluation or educational purposes
+    And blah blah blah
+  QGIS could read this files natively
+
+Ok option
+  https://osmlab.github.io/osm-qa-tiles
+  Good license (OSM ODbL), but not very granular (whole countries, gigs of data)
+
+So, to get a complete ownership of the maps, you need to generate the tiles yourself.
+
+Load PBF and serve with Postserve? TileServer GL?
+  OpenMapTiles Tools
+    Gonna use OMT tools
+    The easiest way is ./quickstart.sh europe/italy/centro geofabrik or ./quickstart.sh europe/italy/centro (it will autodect a source of the data)
+      This will probably download big regions, but it will also prepare the whole stack
+      I recommend doing that anyway with a small area (like Albania, the default), just to get the tools running
+
+    Affter that, you can Can downoad PBF manually: from OSM, one of its mirrors or Geofabrik
+    Or just simply tell the OMT tools to download it for you from Geofabrik
+      make list-geofabrik
+      make download-geofabrik area=europe/italy/centro
+
+    Now need to pre-generate the tiles:
+        make generate-tiles-pg
+
+
+https://www.youtube.com/watch?v=IfFSfn-AAcA - bad video, heavy SVG from OSM, no styling, manual work
