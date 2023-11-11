@@ -236,7 +236,7 @@ This blog post explains the Gradle team’s perspective for what we call a devel
 ____
 
 If I understand correctly, "Declarative Gradle" is essentially the same concept as described above but perhaps more trademarked.
-In fact, "Declarative Gradle" seems to be a more manager-friendly term than "convention plugin," and that's perfectly fine.
+In fact, "Declarative Gradle" seems to be a more manager-friendly term than "convention plugin", and that's perfectly fine.
 
 My concern lies in this:
 
