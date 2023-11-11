@@ -1,0 +1,287 @@
+---
+title: 'Why Declarative Gradle is a cool thing I am afraid of: Maven strikes back'
+date: 2023-11-10T20:00:00+02:00
+tags:
+  - gradle
+  - maven
+---
+
+Yesterday, JetBrains https://blog.jetbrains.com/blog/2023/11/09/amper-improving-the-build-tooling-user-experience[introduced Amper].
+Today, Gradle published another related article, named https://blog.gradle.org/declarative-gradle[Declarative Gradle].
+
+Now, I can see the direction it is leaning towards, and I am afraid of this future.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/declarative-gradle/001.jpg" class="align-center" >}}
+
+<!--more-->
+
+## History of Java Build Tools, simplified and opinionated
+
+[WARNING]
+====
+I won't mention https://scala-sbt.org[SBT] and https://leiningen.org[Leiningen] here because, with all due respect, they are niche build tools.
+I also won't discuss https://beust.com/kobalt[Kobalt] for the same reason (besides, it's no longer actively maintained).
+Additionally, I won't touch upon https://bazel.build[Bazel] and https://buck2.build[Buck] in this context, mainly because I'm not very familiar with them.
+If you have insights or comments about these tools, please feel free to share them in the comments 👇
+====
+
+Let me provide a quick recall of the history of (Java) build tools.
+
+At the beginning, there was Ant.
+The fact of its existence is more information than a sensible person would typically need.
+
+Then arrived Maven, the cool kid on the block around 2005.
+Maven was a very specific solution to a very specific problem: it was a tool used by Apache to build its projects, mostly Java libraries, back at those days.
+Notably, the widely adopted `src/main/java` and `src/test/java` structure finds its roots in Apache's practices from that era.
+This narrative somewhat parallels the (mostly fictitious) story https://www.reddit.com/r/space/comments/k4x1gq/the_connection_between_horses_asses_and_space[linking horse's ass to space shuttles].
+Following that, there was a Maven Golden Age lasting until the 2010s, largely attributed to the absence of substantial competition and the relatively simple nature of Java projects.
+
+Yet, the landscape changed.
+In no particular order:
+
+. Projects became more complex.
+. Apps began to be packaged in Docker images.
+. Projects started adopting a multi-module structure, with some extending to include thousands of individual modules.
+. Build times increased.
+. The evolution of build tools expanded their role beyond traditional building functions.
+. Multi-language projects emerged, with a simple example being the development of a JavaScript frontend.
+. …and then frontends evolved, the need to build them using tools like Webpack arose, though that's a different story.
+. Truly multi-platform projects unfolded.
+To clarify: while Java is multi-platform, developing for server, web, desktop, iOS, and Android from a single codebase became hip only recently.
+Yes, I am talking about Kotlin Multiplatform.
+. …these multi-platform projects required the use of multi-platform dependencies.
+. And so forth.
+
+Maven struggled to keep pace.
+Its origins as a build tool for simple Java libraries within Apache left it unprepared for the evolving landscape.
+
+Consider build caching.
+Maven lacks a proper mechanism for it, except a local repository, but that’s not the same.
+Multi-platform dependencies are another challenge.
+The GAV notation (group, artifact, version), Maven's Holy Grail, proves inadequate.
+And it still relies on a — completely fabricated and opinionated — build lifecycle, organized into dozen-or-something phases.
+Why not a Directed Acyclic Graph (DAG)?
+
+Enter Gradle, our savior.
+Despite being ridiculosly complex — sometimes — it was built on a simple idea — a Directed Acyclic Graph (DAG) — enabling it to evolve and adapt to new challenges.
+That's why...
+
+## Gradle is the most advanced build tool in the Java world!
+
+Consider Android projects.
+They are arguably significantly more challenging than typical Java projects.
+Their builds involve tasks like processing resources and assets, supporting multiple target SDKs, managing various build flavors, and occasionally dealing with native code and dependencies targeting different CPU architectures.
+Yet Gradle became the default build tool for Android projects shortly after Android projects even get a build tool!
+If my memory serves me right, they jumped straight from Ant to Gradle, bypassing Maven, thanks to Google's influence – a move that I find quite illustrative.
+
+Now, let's explore other prominent projects in the Java landscape.
+Kotlin, Spring, Hibernate, RxJava — you name it, they all rely on Gradle.
+With two possible exceptions.
+Oracle isn't particularly fond of Gradle, so don't be surprised if you discover that GraalVM is built with Maven (it actually is, but the build process is more complex than just Maven vs. Gradle).
+And, of course, Apache remains loyal to Maven in projects like Hadoop and Spark.
+After all, it's their child!
+Kafka is build with Gradle, though
+
+However, virtually every other major Java project uses Gradle — check your own dependencies!
+
+In essence, Gradle is a superset of Maven.
+In strict mathematical terms, ponder it for a moment.
+Everything achievable with Maven can be replicated with Gradle, but the reverse is not true.
+
+Gradle's DAG is so simple and powerful that you could probably replicate any other build tool with it.
+The only limitation I could think of: due to the separation of configuration and execution phases, creating and injecting tasks into the DAG on the fly might not be possible.
+Or is it?
+Don't try that at home!
+
+If you have any counterarguments at this juncture, please share them in the comments.
+I'm genuinely interested in understanding any aspects I might be overlooking 👇
+
+## Why strive for declarativeness?
+
+Alright, let's establish a boundary here.
+
+Gradle is one of the most advanced build tools ever, and unquestionably, it is the most advanced build tool in the Java world.
+
+It's based on a very simple yet scalable and extensible concept.
+
+However, this scalability and extensibility come at the cost of complexity, and not everyone enjoys its power at this price tag.
+
+So, a while back, a new trend emerged: declarative Gradle.
+I claim that this concept isn't entirely novel, and the article I referred to at the beginning of this post essentially encapsulates what has already been circulating, rather than initiating the trend.
+
+The Android Gradle plugin serves as a noteworthy example of declarative Gradle that has been in existence for a considerable time.
+
++++<details><summary>+++
+Here's a snippet from the https://developer.android.com/build[official documentation]
++++</summary><div>+++
+[source, kotlin]
+----
+plugins {
+    id("com.android.application")
+}
+
+kotlin {
+    jvmToolchain(11)
+}
+
+android {
+    namespace = "com.example.myapp"
+
+    compileSdk = 33
+
+    defaultConfig {
+        applicationId = "com.example.myapp"
+        minSdk = 21
+        targetSdk = 33
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        getByName("debug") {
+            …
+        }
+    }
+
+    flavorDimensions += "tier"
+    productFlavors {
+        create("free") {
+            dimension = "tier"
+            applicationId = "com.example.myapp.free"
+        }
+
+        create("paid") {
+            dimension = "tier"
+            applicationId = "com.example.myapp.paid"
+        }
+    }
+}
+
+dependencies {
+    implementation(project(":lib"))
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
+}
+----
++++</div></details>+++
+
+Is it really declarative or imperative?
+
+Upon closer examination, you'll notice that it is imperative!
+Statements like these
+
+* `flavorDimensions += "tier`,
+* `getByName("release")`
+* `create("free")`
+
+…are extremely imperative!
+
+Or perhaps not?
+After all, it's just DSL, isn't it?
+And quite eloquent one, I must say.
+Assignments and maybe a bit of object creation and configuration are inevitable, especially when dealing with software models like this.
+
+What's more important, is that we don't see any conditions and loops here.
+They are the true evil of imperative programming, and here, there are none!
+
+Another example of declarative Gradle are so-called convention plugins.
+While the https://docs.gradle.org/current/userguide/custom_plugins.html[documentation about custom plugins] may not explicitly state and emphasize this term (which is a problem itself!), it is used in https://docs.gradle.org/current/samples/sample_convention_plugins.html[the samples].
+There is also this cool guy on YouTube, advocating for these best practices as well, take a look!
+
+{{< youtube id="N95YI-szd78" >}}
+
+The idea behind convention plugins is really interesting, and it is very simililar to the AGP example above (in fact, AGP is a convention plugin!): to conceal all the complexity behind a simple DSL.
+Consider, for instance, another article of mine: https://madhead.me/posts/no-bullshit-maven-publish[No-bullshit guide on publishing your Gradle projects to Maven Central].
+Now, instead of cluttering your build script with the cumbersome publishing block, you could create a convention plugin, resulting in a build script that looks something like this:
+
+[source, kotlin]
+----
+plugins {
+    id("com.acme.publishing")
+}
+----
+
+That's it!
+You wouldn't even have to configure the GAV, as the values could be inferred from the project itself.
+Moreover, this hypothetical plugin could be shared across your company, ensuring uniform publishing configurations for all company's projects.
+
+Thats really imperative, and this is already available in Gradle!
+
+## The problem with the "Declarative Gradle"
+
+[TIP]
+====
+Kudos to the vigilant readers who spotted the inconsistency: I used the term "Declarative Gradle" with a capitalized 'D' here, but earlier, I employed "declarative Gradle" with a lowercase 'd'.
+
+And there's a reason for that!
+====
+
+As demonstrated in the previous section, Gradle is already declarative if you wish it to be!
+All the tools are at your disposal to conceal complexity behind a straightforward and declarative DSL.
+Granted, it requires an investment of time: reading the docs, tuning into YouTube, and the like.
+In larger companies, a dedicated build engineer might be a prudent choice.
+
+However, https://blog.gradle.org/declarative-gradle[the article] I linked at the beginning actually introduces a new term: Declarative Gradle, 'D' capitalized.
+
+[quote]
+____
+This blog post explains the Gradle team’s perspective for what we call a developer-first software definition, or Declarative Gradle for short. This post outlines our plans for making the “elegant and declarative build language” part of our vision a reality. 
+____
+
+If I understand correctly, "Declarative Gradle" is essentially the same concept as described above but perhaps more trademarked.
+In fact, "Declarative Gradle" seems to be a more manager-friendly term than "convention plugin," and that's perfectly fine.
+
+My concern lies in this:
+
+[quote]
+____
+We plan to provide a restricted DSL that separates the software definition and build logic so that the build language is fully declarative. This will effectively enforce existing best practices.
+
+The restricted DSL will allow only a limited set of constructs, such as nesting blocks, assigning values, and selected method invocations. Generic control flow and calls to arbitrary methods will be disallowed. You will be able to write your build logic in any JVM language, such as Java, Kotlin, or Groovy, but that logic will reside in plugins (either local or published).
+____
+
+This is disheartening for me because it feels like a step back.
+
+This __is Maven__, to be precise.
+
+Maven is already a tool with a very restricted DSL (XML; funnily enough, XML https://stackoverflow.com/a/17912073/750510[could be] Turing-complete), where the entire complexity is hidden behind plugins crafted on top of an ambiguous and controversial API.
+Tinkering with the Maven API is genuinely challenging, while you could kick-start your Gradle plugin right in your build script.
+
+**Flexibility is the ultimate power of Gradle**, and I am afraid of losing it.
+I'm afraid of Gradle loosing its charm.
+This is the reason why it is a better build tool than Maven (and this is the first time I'm actually saying that).
+It's about freedom, a quality that doesn't exist in Maven.
+
+Don't get me wrong: it's not advisable to incorporate complex, imperative build logic directly into a build script.
+There are effective ways to circumvent that, as outlined above and in the docs.
+In my nearly 10 years of using Gradle, I've never used a loop in a build script.
+I've used conditions a few times, probably less than 10 times overall, so less than once per year.
+However, I now know how to eliminate them completely.
+The last time I utilized `allprojects` or `subprojects` was likely 3-5 years ago, and I know how to avoid them as well. 
+
+All these things are avoidable by acquainting yourself with the latest Gradle features.
+Dive into the release notes!
+Don't shy away from using the latest Gradle version in your project either (because if you crave for Declarative Gradle™, an upgrade is inevitable).
+Embrace the best practices available.
+If you need a refresher on Gradle, watch https://www.youtube.com/playlist?list=PLWQK2ZdV4Yl2k2OmC_gsjDpdIBTN0qqkE[that guy] on YouTube, he's brilliant!
+
+**
+I am apprehensive that at the end of this "declarativization", we might end up with a less powerful, restricted version of Gradle.
+I fear that the Maven mindset — the concept of having a limited but safe tool — might prevail.
+**
+
+## Why you shouldn't be too worried (and some artistic assumptions)
+
+. I depicted Godzilla Gradle and Kong Amper in a fight, but in reality, Amper is built atop Gradle, making them more like allies.
+. __The existing DSL will continue to be fully supported.__
+. It won't be XML! 🤞
+. No idea or implementation triumphs without community support.
+Alarmists like me have a chance to resist ✊
+
