@@ -9,7 +9,6 @@ languages:
     contentDir: content/en
     weight: 1
     baseurl: https://madhead.me/
-    googleAnalytics: G-SML2093FH8
     menu:
       sidebar:
         - identifier: posts
@@ -20,12 +19,14 @@ languages:
           name: tags
           url: /tags/
           weight: 2
+    services:
+      googleAnalytics:
+        ID: G-SML2093FH8
   ru:
     languageName: RU
     contentDir: content/ru
     weight: 2
     baseurl: https://ru.madhead.me/
-    googleAnalytics: G-7NTLF6MKJL
     menu:
       sidebar:
         - identifier: posts
@@ -36,6 +37,9 @@ languages:
           name: теги
           url: /tags/
           weight: 2
+    services:
+      googleAnalytics:
+        ID: G-7NTLF6MKJL
 
 enableRobotsTXT: true
 
