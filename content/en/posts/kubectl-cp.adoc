@@ -57,8 +57,8 @@ error: Failed to create: /var/cache/yum/metadata
 Second, the environment prevented me from obraining the `root` user privileges on the pod and as a result the `microdnf` just didn't work.
 
 Third, this is an ephemeral solution, a dirty and time-consuming hack.
-It means even if I manage to get `tar` installed, this solution would not work in the future for other pods unless we add `tar` to the image.
-I knew for sure that my team would not be happy with adding extra stuff to the image `tar` just for the sake of copying a file.
+I mean, even if I manage to get `tar` installed, this solution would not work in the future for other pods unless we add `tar` to the image.
+I knew for sure that my team would not be happy with adding extra stuff to the image just for the sake of copying a file.
 
 So I found the https://fabianlee.org/2022/09/10/kubernetes-copying-files-into-and-out-of-containers-without-kubectl-cp/[exec-cat-output-redirectin] hack.
 https://stackoverflow.com/a/60501670/750510[Many] https://stackoverflow.com/a/68567312/750510[people] https://stackoverflow.com/a/69513606/750510[use] it, it should work, right?
