@@ -1,0 +1,114 @@
+---
+title: 'Copying a file from a Kubernetes pod in a highly hostile environment'
+date: 2024-01-10T12:40:00+02:00
+tags:
+  - kubectl
+  - docker
+  - linux
+  - curl
+  - ngrok
+  - tar
+  - lifehack
+  - rant
+---
+
+Do you want to get a binary file from a Kubernetes pod in an highly +++<del>+++hostile+++</del>+++secure environment where you can't use `kubectl cp`?
+Read on!
+
+<!--more-->
+
+So, recently I had to get a **huge** and **binary** file (a Java heap dump) from a Kubernetes pod to my local machine for analysis.
+
+At first, I was like: `kubectl cp` will do the job.
+But it didn't:
+
+[source, bash]
+----
+error: Internal error occurred: error executing command in container: failed to exec in container: failed to start exec "8e29deb771408cfd85c171d69a9bb80597e155fe02caddc33009cfc2b8d6b1d7": OCI runtime exec failed: exec failed: unable to start container process: exec: "tar": executable file not found in $PATH: unknown
+----
+
+It turns out that `kubectl cp` relies on `tar` to copy files, what a surprise.
+https://github.com/kubernetes/kubernetes/issues/58512[Vote] fot the improvement!
+
+[souce, bash]
+----
+kubectl help cp                                                         
+Copy files and directories to and from containers.
+
+Examples:
+  # !!!Important Note!!!
+  # Requires that the 'tar' binary is present in your container
+  # image.  If 'tar' is not present, 'kubectl cp' will fail.
+  #
+  # For advanced use cases, such as symlinks, wildcard expansion or
+  # file mode preservation, consider using 'kubectl exec'.
+----
+
+Okay — was my first thought — I\'ll just install `tar` in the pod and then use `kubectl cp`!
+But after a few attempts I realized that it's not worth the effort.
+First of all, our highly size-optimized pods didn't have any proper package managers, only `microdnf`.
+
+[souce, bash]
+----
+microdnf install tar
+error: Failed to create: /var/cache/yum/metadata
+----
+
+Second, the environment prevented me from obraining the `root` user privileges on the pod and as a result the `microdnf` just didn't work.
+
+Third, this is an ephemeral solution, a dirty and time-consuming hack.
+It means even if I manage to get `tar` installed, this solution would not work in the future for other pods unless we add `tar` to the image.
+I knew for sure that my team would not be happy with adding extra stuff to the image `tar` just for the sake of copying a file.
+
+So I found the https://fabianlee.org/2022/09/10/kubernetes-copying-files-into-and-out-of-containers-without-kubectl-cp/[exec-cat-output-redirectin] hack.
+https://stackoverflow.com/a/60501670/750510[Many] https://stackoverflow.com/a/68567312/750510[people] https://stackoverflow.com/a/69513606/750510[use] it, it should work, right?
+
+[source, bash]
+----
+kubectl exec pod -- cat /tmp/dump.hprof > dump.hprof
+----
+
+Wrong!
+And all those basterds got downvoted for wasting my time.
+
+The problem is that the file is modified for some reason during the process.
+I've spent hours praying that my Internet connection would not blink waiting for the file to be copied.
+Yes, catting a gigabyte is ridiculously slow.
+All I got was a broken heap dump: the `md5sum` of the original file and the one I got were different, the Memory Analyzer Tool was unable to open it.
+
+Oh, that's expected — I thought — the file is binary, so `cat` is not the right tool for the job.
+I should `base64` the damn thing!
+
+[source, bash]
+----
+kubectl exec pod -- base64 /tmp/dump.hprof | base64 --decode > dump.hprof
+----
+
+Now I spent twice as much hours (`base64` is also slow) praying and waiting and all I got… was a broken heap dump again!
+
+So, up to this point I tried these:
+
+- `kubectl cp`.
+- Install `tar` on a pod and then `kubectl cp`.
+- `kubectl exec pod -- cat /tmp/dump.hprof > dump.hprof`
+- `kubectl exec pod -- base64 /tmp/dump.hprof | base64 --decode > dump.hprof`
+
+None of them worked and I was mad and despair.
+
+I had one last idea: **find a simple web server capable of accepting uploads, run it on my laptop, expose it to the Internet through a tool like `ngrok`, and then `curl` the file from the pod to my laptop!**
+
+.laptop
+[source, bash]
+----
+python3 -m pip install --user uploadserver
+python3 -m uploadserver
+ngrok http 8000
+----
+
+.pod
+[source, bash]
+----
+curl -X POST https://<my-ngrok.address>/upload -F 'files=@/tmp/dump.hprof'
+----
+
+And it did the job, quickly and reliably 🤗
