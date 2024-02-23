@@ -1,0 +1,182 @@
+---
+title: On DynamoDB's Single Table Design
+date: 2024-02-23T17:24:00+03:00
+tags:
+  - aws
+  - aws dynamodb
+  - rant
+---
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/std/001.png" class="align-center" >}}
+
+== What's a Single Table Design?
+
+The world learned about the idea of Single Table Design (STD) for DynamoDB somewhere in 2019, probably when https://www.trek10.com/blog/dynamodb-single-table-relational-modeling[this article] came out.
+STD wasn't just a weird idea by some unknown blogger like me, or an AWS DevRel, or any other kind of Internet freak, but it actually has its roots in the official Amazon DynamoDB documentation.
+https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/bp-general-nosql-design.html[Here]:
+
+[quote]
+____
+You should maintain **as few tables as possible** in a DynamoDB application. Having fewer tables keeps things more scalable, requires less permissions management, and reduces overhead for your DynamoDB application. It can also help keep backup costs lower overall.
+____
+
+And then, a few prominent AWS folks spun this recommendation to the extreme into what we now know as STD: **use a single table for all your data**.
+
+[IMPORTANT]
+====
+Of course, **no one meant literally a single table**, but the suggestion was to downsize.
+====
+
+At the core of STD, as we'll discover later, is something called Index Overloading.
+It involves leveraging every available index to its maximum potential — thereby __"overloading"__ — to store heterogeneous data.
+
+[NOTE]
+====
+DynamoDB had a limit of 5 Global Secondary Indices (those were of a particular interest for the STD) back at those days, now the limit is increased to 20 GSIs per table by default.
+====
+
+As a reference implementation, a rather simplistic little application with just a couple of entities was presented to the public, hardly conveying the **potential dangers** of this approach.
+A bit later, another article about STD found its home in the official AWS Blog as well.
+Here are the links: https://www.trek10.com/blog/dynamodb-single-table-relational-modeling[1] | https://www.alexdebrie.com/posts/dynamodb-single-table[2] | https://aws.amazon.com/blogs/compute/creating-a-single-table-design-with-amazon-dynamodb[3].
+
+How outraged I was!
+
+== What's wrong with STD?
+
+It wasn't the STD concept itself that irked me, but the **assertiveness with which it was being pushed**!
+I remember I couldn't hold back and even shot some DMs at our local AWS community champs, demanding answers.
+
+My emotions rooted in the fear that someone on my project might want to adopt this approach.
+Ironically enough, considering I was working solo back then.
+With several dozen tables in our project, merging them all into one was just madness.
+It might have been efficient, but it would surely enrage anyone who had to work with and maintain it.
+
+For instance, the article in the AWS Blog mentions a nifty little constraint in the domain model that limits the size of a single record.
+
+[NOTE]
+====
+The maximum item size in DynamoDB is 400 KB, which includes both attribute names and attribute values.
+====
+
+It goes like this: __we're only storing 300 data points per event, so the data will fit__.
+Isn't that fortunate?
+And if __it doesn't fit, well, just split it somehow into several parts__, you are on your own now!
+But on our project, we already had entities exceeded that limit.
+And we had already resorted to tricks like ZIP compression on the application side, which had already complicated maintenance: such tables are impossible to view in the console.
+
+I wasn't alone in my frustration.
+https://www.reddit.com/r/aws/comments/aimmg7/how_many_people_are_doing_true_single_table[Here]'s an example of one of the STD discussions on Reddit.
+Some users found the whole idea __"overwhelming"__, though there were just as many enthusiasts.
+
+For me, it was obvious that **the approach is at least debatable and not suitable for every situation**.
+But being pessimistic about developers in general, I was concerned they might start applying it indiscriminately, ignoring the specific and realities of the project.
+The official documentation, and the hype, were just too persuasive!
+
+Moreover, this approach is **too complex** if you try to implement it.
+And it's **not flexible**.
+It forces you to think far ahead, really far ahead.
+So much far ahead, that you need to get it right for ages and from the first attempt: modifying an already created STD table, or adding a new type of query to it, is practically impossible.
+
+== Oh how the tables have turned!
+
+Rick Houlihan, the __"Inventor of @DynamoDB #SingleTableDesign"__, has apparently faced so much criticism over time that he felt compelled to defend himself on X.
+His defence, though, is more like __"it was just three of us musketeers, standing agains whole Cardinal's guard"__.
+Yesterday, he twitted:
+
+{{< twitter user="houlihan_rick" id="1760469859761029228" >}}
+
+But let's take a closer look at what he's saying…
+
+[quote]
+____
+I even saw @alexbdebrie apologizing for being an advocate the other day.
+____
+
+Oh, that's indeed to much, no one should apologize for great experiments!
+
+[quote]
+____
+Anyone who tells you a different story than the one that follows is wrong. I led the team that invented the Single Table Design pattern. I have facts, they have at best half-informed opinions. There are 3 people in this world who could tell this story.
+____
+
+That's the musketeers part…
+
+Then follow several paragraphs explaining Index Overloading.
+And I think that's exactrly what the problem with Index Overloading / STD is.
+It's so complex, that requires explanation after being available for about five years already.
+Maybe, it was just a little bit too much for the average developer from the very beginning?
+
+[quote]
+____
+The drawback of doing this was that indexes became more and more polluted with unrelated Item types as the number of access patterns they supported increased.
+____
+
+[quote]
+____
+Because of this it was not easy to drop and recreate indexes without table scans and batch updates which became expensive at scale.
+____
+
+[quote]
+____
+The pattern also introduced heavy cognitive load on developers as using abstract naming for index attributes meant it was not always immediately apparent when looking at the data how the data was being indexed unless the values assigned to the generic keys were self-explanatory.
+____
+
+I couldn't agree more!
+
+[quote]
+____
+All of these things were tradeoffs for applying the Index Overloading pattern, not core issues with Single Table Design itself. They were often deemed acceptable inconveniences considering the benefit of having effectively unlimited GSI's. Most of the problems that drove the need for Index Overloading have been resolved over the years as DynamoDB has added support for 25 GSI's, introduced on demand pricing, and eliminated the need to allocate capacity individually for each index. As a result the pattern should really be considered deprecated today.
+____
+
+Ah…
+Here we go again, aren't we?
+We've just seen that even 5 indices are too much for the average developer, and now we have to deal with 25?
+
+[NOTE]
+====
+I'm not sure why Rick is talking about 25 GSIs, as the official documentation still mentions 20.
+====
+
+[quote]
+____
+Additionally, many people over the years have also taken STD to an extreme that was never intended. Mixing configuration and operational data, maintaining a single table across service boundaries, or storing unrelated data that is not accessed together in the same table. Despite the fact that there are some people out there trying very hard to rewrite history around this, none of these things were ever recommended as best practices.
+____
+
+Here I have to disagree.
+Did we see STD articles in the AWS Blog?
+We did!
+Is it the official source?
+It is!
+If the official AWS Blog is not a place for the best practices, then where is the place?
+
+[quote]
+____
+It is easy to look at the product as it exists today and criticize the design patterns of yesterday that were invented to deal with API deficiencies that no longer exist. I read some serious garbage every now and then written by people I feel should know better, Those people really had very little exposure to the process of solving the problems we faced when the patterns they criticize were introduced.
+____
+
+I'm sorry, to hear that, Rick, we failed your expectations.
+But that's the nature of the crowd, isn't it?
+Remember how developers make cults around some design patterns?
+Yet the https://en.wikipedia.org/wiki/Software_design_pattern[wiki definition] of a design pattern literally says "contextual":
+
+[quote]
+____
+In software engineering, a software design pattern is a general, reusable solution to a commonly occurring problem **within a given context** in software design.
+____
+
+Yet patterns are everywhere, often applied out of context.
+Same as programming languages, databases and lots of other things in the IT world.
+
+== What's the moral of this rant?
+
+It's possible to brilliantly overcome certain technological limitations and propose unconventional and effective solutions to some problems.
+But it's important to be cautious and thoughtful when conveying these ideas to a layperson.
+Architects, come down from your Ivory towers!
+Don't overestimate the intellectual capabilities of developers, but also don't overvalue your own ideas.
+
+Every problem has its context, which is often lost.
+But this goes both ways!
+Just as developers sometimes fail to understand the applicability limits of patterns and solutions, architects sometimes neglect the context in which development occurs.
+You know: tight schedule, low skill…
+
+Don't be sorry for the great idea you gave us you and don't be angry at us for misusing it.
