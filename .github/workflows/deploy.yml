@@ -51,7 +51,7 @@ jobs:
           name: en
           path: public/en
 
-      - uses: peaceiris/actions-gh-pages@v3
+      - uses: peaceiris/actions-gh-pages@v4
         with:
           external_repository: madhead/madhead.github.io
           deploy_key: ${{ secrets.EN_SITE_DEPLOY_KEY }}
@@ -72,7 +72,7 @@ jobs:
           name: ru
           path: public/ru
 
-      - uses: peaceiris/actions-gh-pages@v3
+      - uses: peaceiris/actions-gh-pages@v4
         with:
           external_repository: madhead/ru.madhead.github.io
           deploy_key: ${{ secrets.RU_SITE_DEPLOY_KEY }}
