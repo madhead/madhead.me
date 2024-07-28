@@ -1,0 +1,37 @@
+---
+title: No SNAPSHOTs
+date: 2024-07-28T02:41:00+02:00
+tags:
+  - maven
+---
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/no-snapshots/001.jpg" class="align-center" >}}
+
+**SNAPSHOTs are a https://stackoverflow.com/q/5901378/750510[confusing] Maven concept.**
+Maven is a https://github.com/apache/maven/commit/3db476f1a2b6826d0aee4e9937cb73ae14cd7fae[pre-historic] build tool, invented inside The Apache Software Foundation to build its (mostly Java) projects back in the 2000s.
+It is, thus, very opinionated, just like this post.
+Those opinions{nbsp}—{nbsp}including `SNAPSHOTS`, `maven-release-plugin`, +++<abbr title="Project Object Model">POM</abbr>+++, repository and project layouts, and many more{nbsp}—{nbsp}are still alive today and spoil modern projects.
+
+Even +++<abbr title="Apache Software Foundation">ASF</abbr>+++ does not use Maven to build some of its projects anymore: https://github.com/apache/beam[Beam], https://github.com/apache/groovy[Groovy], https://github.com/apache/lucene[Lucene], https://github.com/apache/geode[Geode], https://github.com/apache/poi[POI], and https://github.com/apache/solr[Solr] are not built with Maven.
+Those are not the most popular ASF projects, I know, but still, it is something.
+
+**Artifacts must be immutable**, and two artifacts with the same version must be the same.
+That is not the case with **SNAPSHOTs**: they **are mutable by definition** and every new build could change the artifact published under the `SNAPSHOT` version.
+
+Because of that, **`SNAPSHOT` artifacts require special treatment.**
+They have their own `updatePolicy`.
+By the way, do you, fellow Maven users, know off the top of your head, https://maven.apache.org/ref/3.9.8/maven-settings/settings.html#snapshots[how often are they updated by default]?
+[.spoiler]#Daily#.
+SNAPSHOTs are usually uploaded to a separate repository and they are not — obviously — accepted by the Maven Central.
+
+**SNAPSHOTs are a potential source of errors.**
+Hopefully, only during the development and testing process, because no one should use them in production.
+
+Stick to something like https://semver.org[Semantic Versioning], and use pre-release identifiers and unique build identifiers instead of SNAPSHOTs.
+BTW, "SNAPSHOT" is a valid Semver pre-release identifier, however to guarantee artifact immutability, you should include additional metadata in the version, like unique build number, commit hash, or timestamp, etc.
+
+Abandoning SNAPSHOTs doesn't mean that you cannot use the "latest" or "dynamic" version of the artifact in your project.
+Modern build tools support https://docs.gradle.org/current/userguide/dynamic_versions.html[dynamic versions], https://docs.gradle.org/current/userguide/rich_versions.html[rich versions], https://yarnpkg.com/advanced/lexicon#range[version] https://python-poetry.org/docs/dependency-specification[ranges], https://yarnpkg.com/features/constraints[constraints], and other cool stuff.
+I am pretty sure your build tool has it.
+
+Just to be clear: published artifacts must be immutable, and SNAPSHOTs are not, but you could still have a dynamic version (or a dynamic, but locked/pinned, version) in your projects.
