@@ -1,0 +1,130 @@
+---
+title: 'madflow'
+date: 2024-07-28T02:41:00+02:00
+tags:
+  - git
+  - github
+---
+
+== Reasoning
+
+I was looking for a simple and language-agnostic way to release software, mostly pet-projects, for quite a while.
+I read about https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow[Gitflow] (which is now "deprecated" by its creators), and https://docs.github.com/en/get-started/using-github/github-flow[GitHub flow], and https://trunkbaseddevelopment.com/[Trunk-Based Development], and all that stuff, but nothing clicked with me.
+
+The Gitflow is just too complex.
+
+The GitHub flow…
+Well, it's good, and everyone using GitHub is kinda using it by default, but it doesn't define versioning at all.
+
+Same for the Trunk-Based Development.
+It's simple, and, frankly speaking, very similar to GitHub flow for me, but I feel like they put — contrary to the GitHub flow — a lot of emphasis on the releases.
+
+I was looking for something in between:
+
+* Trunk-based, with a single main branch and lously defined extra branches.
+* Merge direction towards the main branch.
+* GitHub-centric, with first-class support for forks, PRs, and Dependabot.
+* Language-agnostic.
+* Semver, or something similar, for versioning.
+* Fully automated releases.
+
+Let me explain some of this items, and in the next section I'll formally define the "madflow".
+
+"Lously defined extra branches" means that you could have any namig convention for the branches, and none of the branches is treated specially.
+If you're familiar with the pet vs kettle paradigm, that's it, and all the branches are kettle.
+A hotfix branch should not be that different from the release branch, and both are just fancy names for a feature branch, and a feature branch is just a branch off the trunk.
+
+Merge direction towards the main branch means that any branch should be merged to another branch closer to the trunk, or to the trunk itself.
+A branch should not be merged in multiple another branches, like hotfixes in the Gitflow.
+If you need a specific commit in two branches either merge it (towards the trunk) and rebase the second branch, or cherry-pick the commit.
+Cherry-picking plays nicely with rebases and merges, so you could just have the same unconnected commit in multiple branches and have no conflicts combining them later.
+
+For the GitHub I want to emphasize the importance of the automatic PRs, made by Dependabot and similar tools.
+They should be treated equally to PRs made by humans, and the same rules should apply to them.
+Merge them, should trigger a release.
+
+While Semver is not a requirement, madflow is designed with a monotonically increasing versioning scheme in mind.
+
+Finally, the last point is the most important, the stressless, and automated, releases.
+Again, in short, releases should be treated like a kettle.
+The Gitflow and the Trunk-Based Development both defined so-called "release branches".
+These branches, simply put, are branches to accumulate the changes that are going to be released in the next version.
+And with that, the whole release process feels "manual": a human must decide when to cut off the release branch, when to merge it back to the main branch, and when to, actually, release the code.
+A human must pet the release.
+This is a very intuitive practice and most of the software we use follows it.
+
+Think about Java, Gradle or Kotlin.
+They have a concept of an "upcoming release", sometimes with a defined release date (sometimes the release date is floating).
+They also have a list of features to put in this release.
+Closer to the release date they might release a few "release candidates".
+Sometimes the feature is not ready, so they remove it from the release, and target it for the next one (Project Loom?).
+Same process is followed by IntelliJ IDEA, though the versioning is year-based, and the release candidate is called EAP.
+Firefox does that as well as the Stalker game.
+I feel like every publicly available software does that, because we, humans, prefer to be certain about such things.
+We expect the 2025.1 to come right after 2024.4, and 2.0 follow 1.9.<something>.
+We also like having well-defined release dates.
+
+I was thinking about something different, more like a rolling release paradigm.
+
+Every new piece of code merged to the main branch is a new release.
+Automatically, and unconditionally.
+
+Of course, it is desirable to have _some_ control over it.
+E.g. when using Semver, you, generally, want to control the type of the release: major, minor, or patch.
+Or you might want to accumulate a few commits for the next major release.
+
+But what's more important is that you do not 
+
+== The madflow
+
+. https://semver.org[Semantic Versioning].
+
+. link:../no-snapshots[No ``SNAPSHOT``s].
+
+TODO below
+
+. Main branch is tagged
+
+. The type of the branch merged to the main branch determines the next tag:
+  * `bugfix/\*`, `hotfix/\*`, 'dependabot/\*': - bugfixes, the next tag will be a patch version bump: `1.2.3` → `1.2.4`
+  * `feature/\*`: new feature, the next tag will be a minor version bump: `1.2.3` → `1.3.0`
+  * `release/\*`: a major release, the next tag will be a major version bump: `1.2.3` → `2.0.0`
+
+== Approximate visual representation of the rules above
+
+[source,mermaid]
+....
+%%{
+    init: {
+        "gitGraph": {
+            "showBranches": true,
+            "showCommitLabel": true,
+            "mainBranchName": "master"
+        }
+    }
+  }%%
+gitGraph LR:
+    commit id: "Initial commit" tag: "0.0.1"
+    branch develop
+    checkout master
+    branch feature/feature-1
+    commit id: "0.0.1-feature-feature-1+0f72cce.10119244033"
+    branch feature/feature-2
+    commit id: "0.0.1-feature-feature-2+61dc52e.10119245289"
+    checkout feature/feature-1
+    commit id: "0.0.1-feature-feature-1+bc6a2c1.10119247132"
+    commit id: "0.0.1-feature-feature-1+9b1b291.10119250803"
+    checkout feature/feature-2
+    commit id: "0.0.1-feature-feature-2+e921017.10119250803"
+    checkout develop
+    merge feature/feature-1
+    merge feature/feature-2
+    branch bugfix/bugfix-1
+    commit
+    checkout develop
+    merge bugfix/bugfix-1
+    checkout master
+    merge develop
+    checkout develop
+    commit
+....
