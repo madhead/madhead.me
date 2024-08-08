@@ -1,0 +1,74 @@
+---
+title: Modeless Keyboard Layout Switching in GNOME with Shyriiwook
+date: 2024-02-28T01:15:00+02:00
+tags:
+  - pet projects
+  - GNOME
+  - linux
+  - lifehack
+  - rant
+---
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/001.png" >}}
+
+I stumbled upon the idea of modeless keyboard layout switching a while ago — can't recall when — but it stuck with me.
+Recently, I treated myself to a few extra keys on my mechanical keyboard (just flexin' here).
+Little did I know that trying to make this seemingly simple feature work in GNOME would turn into a ridiculously tough challenge.
+That's how my pet project, https://extensions.gnome.org/extension/6691/shyriiwook[Shyriiwook] (also on GitHub as https://github.com/madhead/shyriiwook[madhead/shyriiwook]), came to life.
+
+<!--more-->
+
+## Contents
+
+* <<problem, The Problem>>
+* <<struggle, The Struggle>>
+* <<solution, The Solution>>
+
+[#problem]
+== The Problem
+
+For my US-based readers who might need a broader explanation: what exactly is a keyboard layout, and why do we need to switch them?
+Well, consider juggling two languages in your daily life, like English and Russian. In my case, it's even more complex with Belarusian, Polish, occasional Ukrainian, and a sprinkle of Greek glyphs.
+Clearly, fitting all these on a single keyboard isn't feasible, so we resort to switching between keyboard layouts.
+A quick press of a magic key combination, and your keyboard starts typing in a different language!
+
+That was a bit simplified (and stereotypical towards Americans).
+In my case, though, I maintain only two primary layouts: one for Latin characters covering English and Polish, and another for Cyrillic encompassing Russian, Belarusian, and Ukrainian.
+I use something called https://en.wikipedia.org/wiki/Compose_key[Compose Key] to input extra glyphs, like `ў` or `ę`, as well as Greek letters.
+Okay, enough flexing.
+
+Now, the snag lies in the fact that the key combination to switch layouts is __typically__ the same for all layouts, and they cycle in a predetermined sequence.
+For example, I use +++<kbd>+++Win+++</kbd>+++ + +++<kbd>+++Space+++</kbd>+++ to toggle between my layouts, and they cycle in a like this:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/002.gif" >}}
+
+Here's the problem: there's a concealed **state**, a **mode** in this approach.
+This mode is obviously the current layout, __typically__ global to the whole system, but some prefer per-window layout switching.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/003.png" >}}
+
+It either forces you to keep that mode, the current layout, in your head, or leads to inevitable mistakes when you forget to switch the layout back.
+Again, it might be inobvious to happy users of Latin-based alphabets, but being a developer and discussing programming (a topic full of English words, and code) in Russian is frustrating.
+
+It either compels you to retain that mode — the current layout — in your mind, or results in unavoidable errors when you overlook switching the layout back.
+Once again, this might not be apparent to those accustomed to Latin-based alphabets, but for a developer engaging in programming discussions (a domain full of English words and code) in Russian, it can be exasperating.
+
+And I'm not the alone ranting about modality.
+There's an entire https://en.wikipedia.org/wiki/Mode_(user_interface)[article on the Wiki] shedding light on some of these problems.
+
+So, it's not me, who invented the idea of modeless keyboard layout switching.
+It's straightforward: each language has its dedicated key combination, and you could switch between them at any time, without having to remember the current layout.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/004.gif" >}}
+
+How challenging could it possibly be to achieve this in GNOME?
+
+[#struggle]
+== The Struggle
+
+It turns out, it's not that easy!
+
+If you
+
+[#solution]
+== The Solution
