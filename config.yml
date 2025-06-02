@@ -45,12 +45,15 @@ enableRobotsTXT: true
 
 disqusShortname: madhead-me
 
+pagination:
+  pagerSize: 10
+
 taxonomies:
   tag: tags
 
 preserveTaxonomyNames: true
 
-paginate: 10
+
 buildFuture: true
 
 title: madhead

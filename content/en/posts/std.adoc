@@ -83,7 +83,7 @@ Rick Houlihan, the __"Inventor of @DynamoDB #SingleTableDesign"__, has apparentl
 His defence, though, is more like __"it was just three of us musketeers, standing agains whole Cardinal's guard"__.
 Yesterday, he twitted:
 
-{{< twitter user="houlihan_rick" id="1760469859761029228" >}}
+{{< x user="houlihan_rick" id="1760469859761029228" >}}
 
 But let's take a closer look at what he's saying…
 
