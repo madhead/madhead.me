@@ -1,6 +1,8 @@
 ---
 baseurl: https://madhead.me/
 
+title: madhead
+
 theme: minimo
 
 languages:
@@ -43,20 +45,13 @@ languages:
 
 enableRobotsTXT: true
 
-disqusShortname: madhead-me
-
 pagination:
   pagerSize: 10
 
 taxonomies:
   tag: tags
 
-preserveTaxonomyNames: true
-
-
 buildFuture: true
-
-title: madhead
 
 params:
   settings:
@@ -79,6 +74,7 @@ params:
     youtube: UCO2UZ6hUzjn9XQIdwwkcXJQ
     twitter: m_a_d_h_e_a_d
     mastodon: "@madhead"
+  disqusShortname: madhead-me
   comments:
     enable: true
   widgets:
@@ -110,3 +106,7 @@ security:
       - (?i)^(PATH|PATHEXT|APPDATA|TMP|TEMP|TERM|GEM_PATH)$
     allow:
       - asciidoctor
+
+services:
+  disqus:
+    shortname: madhead-me
