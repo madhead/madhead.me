@@ -24,6 +24,8 @@ languages:
     services:
       googleAnalytics:
         ID: G-SML2093FH8
+      disqus:
+        shortName: madhead-me
   ru:
     languageName: RU
     contentDir: content/ru
@@ -42,6 +44,8 @@ languages:
     services:
       googleAnalytics:
         ID: G-7NTLF6MKJL
+      disqus:
+        shortName: madhead-me
 
 enableRobotsTXT: true
 
@@ -106,7 +110,3 @@ security:
       - (?i)^(PATH|PATHEXT|APPDATA|TMP|TEMP|TERM|GEM_PATH)$
     allow:
       - asciidoctor
-
-services:
-  disqus:
-    shortname: madhead-me
