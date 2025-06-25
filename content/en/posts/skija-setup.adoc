@@ -1,0 +1,185 @@
+---
+title: 'Learning Skija: project setup'
+date: 2021-02-17T09:00:00+03:00
+tags:
+  - skija
+  - graphics
+  - kotlin
+---
+
+A few days ago I was wandering the Internet and landed on this page: https://tonsky.me/blog/skija["Graphics for JVM"].
+I knew that guy before by https://tonsky.me/blog/disenchantment[his] https://tonsky.me/blog/good-times-weak-men[rants] and guides on https://tonsky.me/blog/monitors[choosing the monitor].
+Although I'm still using my cheap 13" laptop and I don't even clean its screen properly, I trust Nikita.
+
+And now he wrote an article about https://github.com/JetBrains/skija[Skija], a Java wrapper around https://skija.org[Skia], a modern C++ graphics toolkit that powers https://flutter.dev[Flutter], https://fuchsia.dev[Fuschia], and https://www.chromium.org[Chromium].
+Even more, a Closure fan, he is actually the only one who contributes to Skija, which is written in pure Java (although they use Lombok 💩).
+
+I bet he wouldn't put so much effort into a Java library if the whole thing was cheap.
+It must be rad!
+
+And it is.
+
+<!--more-->
+
+I've never done any graphics programming in my life, except for https://youtu.be/5UPO553U-w4[some experiments] with https://openrndr.org[OPENRNDR] (which is also great) and using https://docs.oracle.com/en/java/javase/14/docs/api/java.desktop/java/awt/Graphics2D.html[Graphics2D] occasionally.
+I expected a graphics library to be pretty low-level.
+You know: managing the memory manually, using pointers extensively, counting every byte.
+Using structures and procedures instead of classes…
+I came from the JVM world, and I’m alien to that.
+
+But Skia seems different.
+Even though everything written above applies to it — it uses pointers and sometimes you need to allocate the memory manually — it's more modern than I've expected.
+
+How about https://skia.org/user/modules/skottie[Lottie animations support] built in the library?
+
+++++
+<div class="align-center">
+    <iframe width="400" height="400" src="https://skottie.skia.org/e/c16eee287f2cea44102b6670c66e60ab?w=400&h=400" scrolling="no"></iframe>
+</div>
+++++
+
+This cat +++<del>+++runs+++</del>+++flies on Skia in your browser right now!
+So, how about https://jsfiddle.skia.org/canvaskit[JS and Canvas] support with WASM?
+How about https://fiddle.skia.org/c/@skcanvas_star[playing] with Skia online?
+How about https://debugger.skia.org/?url=https://fiddle.skia.org/i/@skcanvas_star.skp[troubleshooting] the rendering pipeline online as well?
+
+These features are cool and they seem really modern.
+The last time I've used https://docs.oracle.com/en/java/javase/14/docs/api/java.desktop/java/awt/Graphics2D.html[Graphics2D] it was not even ⅒ of that cool.
+
+Although I don't need any graphics in my work — I am a backend developer — I decided to spend a few evenings on Skija.
+Who knows, probably one day I will be tasked with drawing a bar chart for a PDF report.
+I could probably use Skija for that!
+
+And here be dragons.
+Skia's docs are great.
+Skija's docs are poor.
+
+They have literally two Markdown files in the repository and that's it.
+One of them just describes the code style of the project and is good for potential contributors, but has little value for users.
+The other just suggests you to read https://docs.microsoft.com/en-us/xamarin/xamarin-forms/user-interface/graphics/skiasharp[SkiaSharp docs].
+
+So I decided to write a few articles as I learn Skija and Skia to help others to start.
+
+{{<figure src="//storage.googleapis.com/madheadme-static/posts/skija-setup/001.jpg" class="align-center">}}
+
+Moreover writing about it will help me better understand it.
+
+So let's start!
+
+In this article, I'll just set up a simple Kotlin + Skija project and draw a star without digging into details.
+
+== Configuring dependencies
+
+It's actually very simple.
+Forget about building native binaries or configuring `java.library.path`.
+Skija is distributed as a regular JVM library: it's a `.JAR` file in a Maven repo.
+Its native part is packed inside that `.JAR` and loaded automatically.
+The only trick here is to configure the correct Maven repository, as Skija is not published to Maven Central yet.
+
+So, including Skija in your project is as simple as:
+
+[source, kotlin]
+.build.gradle.kts
+----
+repositories {
+    maven("https://packages.jetbrains.team/maven/p/skija/maven")
+}
+dependencies {
+    implementation("org.jetbrains.skija:skija-linux:0.89.18")
+}
+----
+
+Here I assume a Linux machine, but there are artifacts for macOS and Windows, named `skija-macos-x64` and `skija-windows` respectively.
+
+If you're still using Maven — stop it!.
+But here is a piece of config for you:
+
+[source, xml]
+.pom.xml
+----
+<repositories>
+  <repository>
+    <id>skija</id>
+    <url>https://packages.jetbrains.team/maven/p/skija/maven</url>
+  </repository>
+</repositories>
+<dependencies>
+  <dependency>
+    <groupId>org.jetbrains.skija</groupId>
+    <artifactId>skija-linux</artifactId>
+    <version>0.89.18</version>
+  </dependency>
+</dependencies>
+----
+
+And, yes, judging by the version — `0.89.18` — Skija doesn't have a stable release yet.
+
+== Drawing a star
+
+Ok, now let's draw a star without using any primitives or math.
+Just like we do that by hand: from the bottom-left corner, by drawing 5 lines and closing the contour.
+
+[source, kotlin]
+.main.kt
+----
+val surface = Surface.makeRasterN32Premul(256, 256) // <1>
+val canvas = surface.canvas // <2>
+
+val path = Path() // <3>
+
+path.moveTo(76.104085F, 208.01411F) // <4>
+path.lineTo(128F, 48.294907F) // <5>
+path.lineTo(179.89591F, 208.01411F)
+path.lineTo(44.030648F, 109.30221F)
+path.lineTo(211.96935F, 109.30221F)
+path.closePath() // <6>
+
+// <7>
+val paint = Paint().apply {
+    isAntiAlias = true
+    mode = PaintMode.STROKE
+    color = 0xFFFFD700.toInt()
+}
+
+canvas.clear(0xFF000000.toInt()) // <8>
+canvas.drawPath(path, paint) // <9>
+surface
+        .makeImageSnapshot() // <10>
+        ?.encodeToData(EncodedImageFormat.JPEG) // <11>
+        ?.bytes
+        ?.let { bytes ->
+            val file = Files.createTempFile("", ".jpg")
+
+            file.toFile().writeBytes(bytes)
+        }
+
+----
+Let's briefly see what happens here.
+
+<1> You need some space to draw.
+`Surface` provides you that space, backed by your computer's RAM.
+There are other options, like drawing to a window or PDF document, but with a `Surface` we are simply drawing into memory.
+`makeRasterN32Premul` creates a special `Surface` flavor that stores values of pixel colors premultiplied with their alphas.
+Another option is to store colors and alpha separately and multiple the values when the pixels are actually drawn, but pre-multiplying is more performant.
+<2> All the drawing actually happens on a `canvas`, provided by our `surface`.
+So `surface` manages the destination for the drawing, and `canvas` provides the drawing APIs.
+<3> A `Path` is… a path.
+Without diving into details it's a list of connected points.
+<4> We start our star by placing a virtual pen in it's bottom-left corner.
+<5> `lineTo` moves a virtual pen from its previous position to the given one, leaving a trace on the canvas.
+And this is the difference: `lineTo` leaves a trace and `moveTo` does not.
+<6> Instead of moving the cursor to the point where we began drawing the star by the coordinates, we could just use `closePath`.
+<7> `Paint` is basically a data structure describing our virtual pen.
+Here I say that I want an https://en.wikipedia.org/wiki/Anti-aliasing[anti-aliased] stroke of the golden color.
+<8> This command just replaces the canvas context (if any) with the given color, black in this case.
+<9> Finally, we draw our `path` using the pre-defined `paint` style.
+<10> Done with our drawing, we now want to export it into a file.
+`makeImageSnapshot` is just an API used to create an intermediary class — `Image` — that can later encode itself into different formats.
+<11> Encode that image into JPEG format and then export it into a temporary file.
+
+{{<figure src="//storage.googleapis.com/madheadme-static/posts/skija-setup/002.jpg" class="align-center">}}
+
+Congrats, you've drawn your first image with Skija!
+
+You can find the code for this example https://github.com/madhead/skija-playground/blob/master/app/src/main/kotlin/me/madhead/playgrounds/skija/basics/Star.kt[here].
+Take a note of https://github.com/madhead/skija-playground[the whole repository] as I'll be doing more Skija examples there and stay tuned for more articles about Skija in this blog!
