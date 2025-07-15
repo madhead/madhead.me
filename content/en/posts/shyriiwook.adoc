@@ -1,0 +1,134 @@
+---
+title: Modeless Keyboard Layout Switching in GNOME with Shyriiwook
+date: 2025-07-15T00:29:00+02:00
+tags:
+  - pet projects
+  - GNOME
+  - linux
+  - lifehack
+  - rant
+---
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/001.png" >}}
+
+Recently, I treated myself with a few extra keys on my mechanical keyboard (just flexin' here), and I decided to set them up to switch keyboard layouts modelessly.
+Little did I know that trying to make this seemingly simple feature work in GNOME would turn into a ridiculously tough challenge.
+That's how my pet project, https://extensions.gnome.org/extension/6691/shyriiwook[Shyriiwook] (also on GitHub as https://github.com/madhead/shyriiwook[madhead/shyriiwook]), came to life.
+
+<!--more-->
+
+## Contents
+
+* <<problem, The Problem>>
+* <<struggle, The Struggle>>
+* <<solution, The Solution>>
+
+[#problem]
+== The Problem
+
+For my US-based readers who might need a broader explanation: what exactly is a keyboard layout, and why do we need to switch them?
+Well, consider juggling two languages in your daily life, like English and Russian. In my case, it's even more complex with Belarusian, Polish, occasional Ukrainian, and a sprinkle of Greek glyphs.
+Clearly, fitting all these on a single keyboard isn't feasible, so we resort to switching between keyboard layouts.
+A quick press of a magic key combination, and your keyboard starts typing in a different language!
+
+That was a bit simplified (and stereotypical towards Americans).
+In my case, though, I maintain only two primary layouts: one for Latin characters covering English and Polish, and another for Cyrillic encompassing Russian, Belarusian, and Ukrainian.
+I use something called https://en.wikipedia.org/wiki/Compose_key[Compose Key] to input extra glyphs, like `ў` or `ę`, as well as Greek letters.
+Okay, enough flexing.
+
+Now, the snag lies in the fact that the key combination to switch layouts is __typically__ the same for all layouts, and they cycle in a predetermined sequence.
+For example, I use +++<kbd>+++Win+++</kbd>+++ + +++<kbd>+++Space+++</kbd>+++ to toggle between my layouts, and they cycle like this:
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/002.gif" >}}
+
+Here's the problem: there's a concealed **state**, a **mode** in this approach.
+This mode is obviously the current layout, __typically__ global to the whole system, but some prefer per-window layout switching.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/003.png" >}}
+
+It either forces you to keep that mode, the current layout, in your head, or leads to inevitable mistakes when you forget to switch the layout back.
+Again, it might be inobvious to happy users of Latin-based alphabets, but being a developer and discussing programming (a topic full of English words, and code) in Russian is frustrating.
+
+And I'm not the alone ranting about modality.
+There's an entire https://en.wikipedia.org/wiki/Mode_(user_interface)#Mode_errors[article on the Wiki] shedding light on some of these problems.
+
+So, it's not me, who invented the idea of modeless keyboard layout switching.
+It's straightforward: each language has its **dedicated key combination**, and you could switch between them at any time, without having to remember the current layout.
+So, for instance, I could set up my keyboard so that +++<kbd>+++Win+++</kbd>+++ + +++<kbd>+++F1+++</kbd>+++ always and unconditionally switches to the English layout, and +++<kbd>+++Win+++</kbd>+++ + +++<kbd>+++F2+++</kbd>+++ switches to the Russian layout.
+Of course, if you are already in the requested layout, those key combinations would do nothing.
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/004.gif" >}}
+
+How challenging could it possibly be to achieve this in GNOME?
+
+[#struggle]
+== The Struggle
+
+Turns out, it's not that easy.
+Trying to make this work felt more like digital archaeology: digging through the sediment layers of GNOME and Linux input configuration history.
+
+The earliest method I came across was the `setxkbmap` command.
+It's still around and very low-level, which is impressive.
+Unfortunately, it doesn't play nicely with GNOME Shell.
+At least not with mine.
+It does switch the layout, but GNOME Shell doesn't seem to notice it.
+The UI indicator gets stuck, and the keyboard shortcuts stop working until you restart the session.
+
+Yeah, no. Moving on.
+
+Then there's the more "modern" approach, often recommended online: `gsettings set org.gnome.desktop.input-sources current`
+I suspect it stopped working somewhere https://askubuntu.com/q/1039950/171572[around] 2018, however some people still recommend it.
+
+They wasted my time, moving on!
+
+Then came the `gdbus call … method org.gnome.Shell.Eval …` trick.
+Basically, `eval()` for your desktop environment.
+As with every other `eval()` in every other +++<del>+++programming+++</del>+++scripting language, it was considered unsafe, got deprecated and put to oblivion.
+
+Fair enough, but it leaves me without a solution, so moving on!
+
+Then someone tried to bring `Eval` https://github.com/ramottamado/eval-gjs[back from the dead], and someone else repackaged it as a GNOME extension without attribution, so the original author had to put a warning in their repo.
+
+That warning is scary, moving on!
+
+Ah, wait, that's it.
+No more options seem to exist.
+
+[#solution]
+== The Solution
+
+Eventually, I gave up on trying to find a solution, and just wrote an extension instead.
+
+It's called https://extensions.gnome.org/extension/6691/shyriiwook[Shyriiwook], and it's https://github.com/madhead/shyriiwook[OSS], of course
+
+It works by exposing a D-Bus interface, but without any `Evals`:
+
+[source, bash]
+....
+$ gdbus introspect \
+    --session \
+    --dest org.gnome.Shell \
+    --object-path /me/madhead/Shyriiwook \
+    --only-properties
+
+node /me/madhead/Shyriiwook {
+  interface me.madhead.Shyriiwook {
+    properties:
+      readonly as availableLayouts = ['us', 'by+ru'];
+      readonly s currentLayout = 'us';
+  };
+};
+
+$ gdbus call \
+    --session \
+    --dest org.gnome.Shell \
+    --object-path /me/madhead/Shyriiwook \
+    --method me.madhead.Shyriiwook.activate "by+ru"
+....
+
+By using the last command, you assign a dedicated shortcut to each layout.
+No cycling, no guessing, no hidden state, just press the key, get the layout.
+
+I hope, the total time I saved for the humanity on switching keyboard layouts is worth the time I spent on this project 🙂
+
+{{< figure src="//storage.googleapis.com/madheadme-static/posts/shyriiwook/005.png" >}}
