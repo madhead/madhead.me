@@ -46,7 +46,7 @@ jobs:
       name: Production (EN)
       url: https://madhead.me
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: en
           path: public/en
@@ -67,7 +67,7 @@ jobs:
       name: Production (RU)
       url: https://ru.madhead.me
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           name: ru
           path: public/ru
