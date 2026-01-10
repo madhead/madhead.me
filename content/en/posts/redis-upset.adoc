@@ -1,0 +1,118 @@
+---
+title: 'When being dumb is the best solution'
+date: 2026-01-10T22:12:00+01:00
+tags:
+  - redis
+  - fuckup
+---
+
+A small performance story about Redis, bad assumptions, and how a stupid solution turned out to be the best one.
+
+<!--more-->
+
+About a year ago, I was responsible for a feature that required storing a set of numbers in Redis.
+The data model, without any simplifications, looked like this:
+
+[source,json]
+----
+{
+  "memberId1:allow": [1, 2, 3],
+  "memberId2:disallow": [4, 5, 6],
+  …
+  "memberIdN:<flag>": [7, 8, 9]
+}
+----
+
+The `flag` here is the most important part of the key: it indicates whether the numbers in the list represent an allow or a disallow list of products for a given member.
+
+To retrieve the data for a member, we only needed to fetch two keys, with one of them always guaranteed to be empty.
+We then filtered all available products based on those lists.
+
+Without much doubt, I decided to store those lists as https://redis.io/docs/latest/develop/data-types/sets[Redis sets] and retrieve them using https://redis.io/docs/latest/commands/smembers[`SMEMBERS`].
+The data was loaded by an offline process, so write performance was never a concern.
+So far, so good, and, most importantly, smart and proper!
+You have to use sets for… sets, right?
+
+The first issue was very simple: I forgot about the size of the data.
+The total number of data items is not important, but I made some assumptions about the set sizes and didn't anticipate 15K+ elements.
+
+But, for quite a while, everything was fine.
+My guess is that the users of this API gradually increased the size of those sets.
+We don't own the data, merely get it from one place and one responsible team, store it, and serve it to the other teams.
+At the same time, the feedback loop was broken.
+Well, our processes are far from perfect.
+
+Then one day, we started seeing bottlenecks in that service in our own metrics.
+
+After some investigation, I found that `SMEMBERS` was taking too long and periodically blocked all of our pods.
+As far as I understand, `SMEMBERS` is an O(N) blocking operation.
+For large sets, it took long enough to cause trouble.
+
+Clients would time out and retry the request, usually hitting a different pod.
+Eventually, all pods ended up busy retrieving large sets.
+They did complete eventually, but by then the clients had already given up, even after retries.
+
+(Un)luckily, this data was not critical.
+The clients had a fallback mechanism, so for users the issue was unnoticeable.
+From our side, things went back to normal after a few seconds.
+
+The first fix was straightforward: I replaced `SMEMBERS` with https://redis.io/docs/latest/commands/sscan[`SSCAN`].
+
+`SSCAN` is non-blocking and yields control back to the event loop after retrieving a small chunk of data.
+That immediately fixed the issue on our side: no more blocked pods.
+
+The clients were still broken.
+`SSCAN` takes even longer to retrieve the full dataset, so client-side timeouts were still happening.
+
+Eventually, they complained, and I had to fix it properly.
+
+My first idea was to change the shape of the data entirely and store it like this:
+
+[source,json]
+----
+{
+  "memberId1:1": "allow",
+  "memberId2:2": "allow",
+  "memberId3:3": "allow",
+  …
+  "memberIdN:7": "<flag>",
+  "memberIdN:8": "<flag>",
+  "memberIdN:9": "<flag>"
+}
+----
+
+This would require a fairly large refactoring.
+We would need to fetch values for all the products we're potentially interested in (using https://redis.io/docs/latest/commands/mget[`MGET`]) and then filterim them based on the returned data.
+
+Doable, but messy.
+Not to mention the need to retrieve thoutsands of keys for each request!
+
+Then I had another idea.
+What if I stopped trying to use the "proper" data structure?
+What if, instead of a set, I just stored the list as a JSON array in a plain string value?
+
+16K five-digit numbers, with commas, spaces (and two brackets!), is only 0.1 MB of data.
+That's not much.
+
+I changed just a few lines of code and ran a benchmark.
+I used https://github.com/openjdk/jmh[JMH], but that is on ovekill here too.
+Also, it is not recommended for IO-bound benchmarks.
+But I just wanted a rough idea of the performance difference.
+
+Here are the results:
+
+[source]
+----
+15797 elements:
+
+Baseline (SSCAN): 75799.793 ± 448.298 ms/op
+JSON string:         83.643 ± 5.498 ms/op
+----
+
+That's **three orders of magnitude faster** than the proper SSCAN-based approach.
+
+## Moral
+
+The moral of the story is simple: don't overthink things.
+The "proper" data structure is not always the best one.
+Trust the benchmarks.
