@@ -29,11 +29,11 @@ jobs:
 
       - run: hugo
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: en
           path: public/en
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: ru
           path: public/ru
