@@ -1,0 +1,100 @@
+---
+title: How Herdr broke my sound
+date: 2026-11-12T09:00:00+03:00
+tags:
+  - ai
+  - herdr
+  - pulseaudio
+  - linux
+---
+
+Imagine: you install a new terminal tool, reboot your laptop, and suddenly your audio is gone.
+PulseAudio refuses to start, the volume mixer hangs on "Establishing connection to PulseAudio. Please wait…", and your system settings show zero audio outputs.
+
+I don't even need to do that, as it happened to me.
+How does a terminal multiplexer manage to nuke PulseAudio?
+
+Watch closely.
+
+<!--more-->
+
+== The good intentions of `herdr-core`
+
+I recently started playing with https://herdr.dev[Herdr], a modern terminal multiplexer.
+Like many background daemons, `herdr-core` wants to be helpful and survive your logout so your sessions don't get abruptly terminated.
+
+To achieve this under `systemd`, it attempts to enable lingering for your user account.
+In fact, if you poke around inside the binary, you'll find it running:
+
+[source,bash]
+----
+loginctl --no-ask-password enable-linger <username>
+----
+
+Under Ubuntu, default PolicyKit rules happily allow an active desktop session to enable lingering for oneself without prompting for a password (self-linger).
+So herdr-core quietly turned lingering on behind my back.
+
+== What's lingering, anyway?
+
+Normally, `systemd` user services (`systemctl --user`) only start when you actually log in.
+
+When linger is enabled, `systemd` starts your user manager right when the machine boots up, before anyone even touches the keyboard or reaches the display manager.
+
+Sounds harmless enough until you combine it with an encrypted home directory.
+
+== The catch: encrypted home directories
+
+My home directory is encrypted.
+It only gets decrypted and mounted when PAM handles my login.
+
+Here is the exact boot-time disaster:
+
+. Machine boots up.
+`systemd` sees `Linger=yes` for me and immediately attempts to spawn all my stuff.
+. At this point, my home is still locked and unmounted.
+. System-level user units, living in `/usr/lib/systemd/user/`, try to start.
+Among them there is `pulseaudio.service`.
+. PulseAudio tries to access `~/.config/pulse`.
+Since `~` is locked, it fails…
+. `systemd` retries it a few more times during only 3 (!!) seconds, hits the start rate limit, throws its hands in the air, and completely disables PulseAudio.
+. I finally log in, my home is decrypted.
+But systemd has already given up on PulseAudio!
+
+== Collateral damage
+
+To make matters worse, PulseAudio wasn't the only victim.
+
+`systemd` couldn't see `~/.config/systemd/user` either.
+When I finally logged in, all my custom user stuff was completely broken: `systemd` doesn't automatically run a `daemon-reload` or re-evaluate target dependencies.
+
+== The Fix
+
+I don't need Herdr sessions to survive logouts on my local machine.
+But simply running `loginctl disable-linger` wouldn't stick the next time herdr-core starts (remember: it sets self-linger on every start!).
+
+The cleanest permanent fix is to tell PolicyKit to outright reject automatic linger toggling.
+
+So, I dropped a rule into `/etc/polkit-1/localauthority/50-local.d/disallow-linger.pkla`:
+
+[source]
+----
+[Disallow enable-linger]
+Identity=unix-user:*
+Action=org.freedesktop.login1.set-self-linger;org.freedesktop.login1.set-user-linger
+ResultAny=no
+ResultInactive=no
+ResultActive=no 
+----
+
+Now:
+
+- When `herdr-core` attempts `loginctl --no-ask-password enable-linger`, PolicyKit immediately blocks it.
+- `Linger=no` stays.
+- On reboot — just as previously — user services wait for PAM to mount /home before starting.
+- PulseAudio and user timers work now.
+
+Oh, the endless wonders that AI brings into our lives.
+You just wanted an agent-friendly terminal, and next thing you do is reverse-engineering PolicyKit and reading assembly offsets at 3 AM to get your headphones to play sound again.
+With AI, of course!
+
+What a time to be alive.
